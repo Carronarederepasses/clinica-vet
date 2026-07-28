@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goldefeder — Pacientes</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .paciente-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+    .paciente-card {
+      border:1px solid var(--gray-200); border-radius:var(--radius); padding:1.25rem;
+      cursor:pointer; transition:all .15s; background:var(--white);
+    }
+    .paciente-card:hover { border-color:var(--black); box-shadow:var(--shadow-md); }
+    .pet-avatar {
+      width:48px;height:48px;border-radius:50%;background:var(--gray-200);
+      display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+      margin-bottom:.75rem; overflow:hidden;
+    }
+    .pet-avatar img { width:100%;height:100%;object-fit:cover; }
+    .pet-nome { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; }
+    .pet-info { font-size:.8rem; color:var(--gray-600); margin-top:.2rem; }
+    .pet-tutor { font-size:.8rem; margin-top:.5rem; padding-top:.5rem; border-top:1px solid var(--gray-100); }
+  </style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
+  <div class="nav-links">
+    <a href="home.html">Dashboard</a>
+    <a href="index.html">+ Atendimento</a>
+    <a href="pacientes.html" class="active">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html">Procedimentos</a>
+    <a href="tutores.html">Tutores</a>
+    <a href="busca.html">Busca</a>
+  </div>
+</nav>
+<main>
+  <h1>Pacientes</h1>
+  <p class="subtitle" id="sub-total">Carregando...</p>
+
+  <div class="filters">
+    <input type="text" id="busca" placeholder="Buscar por nome, raça...">
+    <select id="filtro-especie">
+      <option value="">Todas as espécies</option>
+      <option>Cachorro</option><option>Gato</option><option>Ave</option>
+      <option>Coelho</option><option>Réptil</option><option>Outro</option>
+    </select>
+    <select id="filtro-status">
+      <option value="">Todos os status</option>
+      <option value="ativo">Ativo</option>
+      <option value="inativo">Inativo</option>
+      <option value="óbito">Óbito</option>
+    </select>
+    <button class="btn btn-outline btn-sm" id="btn-limpar">Limpar</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="abrirModal()">+ Novo paciente</button>
+  </div>
+
+  <div id="lista-container"><div class="empty-state"><p>Carregando...</p></div></div>
+</main>
+<div id="toast"></div>
+
+<!-- Modal paciente -->
+<div class="modal-overlay" id="modal-paciente">
+  <div class="modal" style="max-width:600px">
+    <h3 id="modal-titulo">Novo Paciente</h3>
+    <form id="form-paciente" novalidate style="margin-top:1rem">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="m-nome">Nome *</label>
+          <input type="text" id="m-nome" placeholder="Nome do pet" required>
+        </div>
+        <div class="form-group">
+          <label for="m-especie">Espécie</label>
+          <select id="m-especie">
+            <option>Cachorro</option><option>Gato</option><option>Ave</option>
+            <option>Coelho</option><option>Réptil</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="m-raca">Raça</label>
+          <select id="m-raca"><option value="">Selecione...</option></select>
+        </div>
+        <div class="form-group">
+          <label for="m-sexo">Sexo</label>
+          <select id="m-sexo"><option value="">—</option><option>Macho</option><option>Fêmea</option></select>
+        </div>
+        <div class="form-group">
+          <label for="m-nasc">Data nascimento</label>
+          <input type="date" id="m-nasc">
+        </div>
+        <div class="form-group">
+          <label for="m-peso">Peso (kg)</label>
+          <input type="number" id="m-peso" placeholder="Ex: 12.5" step="0.1" min="0">
+        </div>
+        <div class="form-group">
+          <label for="m-cor">Cor / Pelagem</label>
+          <input type="text" id="m-cor" placeholder="Ex: Caramelo">
+        </div>
+        <div class="form-group">
+          <label for="m-status">Status</label>
+          <select id="m-status">
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="óbito">Óbito</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:.5rem;padding-top:1.5rem">
+          <input type="checkbox" id="m-castrado" style="width:auto">
+          <label for="m-castrado" style="text-transform:none;font-size:.9rem;font-weight:400">Castrado(a)</label>
+        </div>
+        <div class="form-group full">
+          <label for="m-tutor">Tutor (nome)</label>
+          <input type="text" id="m-tutor-busca" placeholder="Buscar tutor..." autocomplete="off">
+          <div id="m-lista-tutores" style="border:1px solid var(--gray-200);border-radius:var(--radius);max-height:150px;overflow-y:auto;display:none"></div>
+          <input type="hidden" id="m-tutor-id">
+          <span id="m-tutor-nome" style="font-size:.8rem;color:var(--gray-600)"></span>
+        </div>
+        <div class="form-group full">
+          <label for="m-obs">Observações</label>
+          <textarea id="m-obs" placeholder="Histórico relevante, condições especiais..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-danger btn-sm" id="btn-excluir-pac" style="display:none;margin-right:auto">Excluir</button>
+        <button type="button" class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btn-salvar-pac">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let todos = [];
+let editandoId = null;
+const EMOJI = { Cachorro:'🐕', Gato:'🐈', Ave:'🦜', Coelho:'🐇', Réptil:'🦎', Outro:'🐾' };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!initSupabase()) return;
+  await carregar();
+
+  // Raças cascata no modal
+  const mEsp = document.getElementById('m-especie');
+  const mRaca = document.getElementById('m-raca');
+  popularRacas(mEsp, mRaca);
+  mEsp.addEventListener('change', () => popularRacas(mEsp, mRaca));
+
+  // Autocomplete tutor no modal
+  const inp = document.getElementById('m-tutor-busca');
+  const lst = document.getElementById('m-lista-tutores');
+  let t;
+  inp.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const results = await buscarTutores(inp.value);
+      if (!results.length) { lst.style.display='none'; return; }
+      lst.innerHTML = results.map(r=>`<div class="autocomplete-item" data-id="${r.id}"><strong>${esc(r.nome)}</strong><small>${fmtTelefone(r.telefone)}</small></div>`).join('');
+      lst.style.display='';
+      lst.querySelectorAll('.autocomplete-item').forEach((el,i)=>{
+        el.addEventListener('click',()=>{
+          document.getElementById('m-tutor-id').value=results[i].id;
+          document.getElementById('m-tutor-nome').textContent='Tutor: '+results[i].nome;
+          inp.value=''; lst.style.display='none';
+        });
+      });
+    },250);
+  });
+
+  // Filtros
+  document.getElementById('busca').addEventListener('input', renderFiltrado);
+  document.getElementById('filtro-especie').addEventListener('change', renderFiltrado);
+  document.getElementById('filtro-status').addEventListener('change', renderFiltrado);
+  document.getElementById('btn-limpar').addEventListener('click', () => {
+    document.getElementById('busca').value='';
+    document.getElementById('filtro-especie').value='';
+    document.getElementById('filtro-status').value='';
+    renderFiltrado();
+  });
+
+  document.getElementById('form-paciente').addEventListener('submit', salvar);
+  document.getElementById('btn-excluir-pac').addEventListener('click', excluir);
+});
+
+async function carregar() {
+  const { data } = await dbClient.from('pacientes').select('*,tutores(nome,telefone)').order('nome');
+  todos = data || [];
+  document.getElementById('sub-total').textContent = `${todos.length} paciente(s) cadastrado(s)`;
+  renderFiltrado();
+}
+
+function renderFiltrado() {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const esp = document.getElementById('filtro-especie').value;
+  const st = document.getElementById('filtro-status').value;
+  let lista = todos.filter(p => {
+    if (esp && p.especie !== esp) return false;
+    if (st && p.status !== st) return false;
+    if (busca) {
+      const txt = [p.nome,p.raca,p.cor,p.tutores?.nome].filter(Boolean).join(' ').toLowerCase();
+      if (!txt.includes(busca)) return false;
+    }
+    return true;
+  });
+  const c = document.getElementById('lista-container');
+  if (!lista.length) { c.innerHTML='<div class="empty-state"><p>Nenhum paciente encontrado.</p></div>'; return; }
+  c.innerHTML = `<div class="paciente-grid">${lista.map(p=>`
+    <div class="paciente-card" onclick="abrirModal('${p.id}')">
+      <div class="pet-avatar">${EMOJI[p.especie]||'🐾'}</div>
+      <div class="pet-nome">${esc(p.nome)}</div>
+      <div class="pet-info">${esc(p.especie||'')} · ${esc(p.raca||'SRD')} · ${p.sexo||'—'} · ${fmtIdade(p.data_nascimento)}</div>
+      ${p.peso?`<div class="pet-info">${p.peso} kg</div>`:''}
+      <div style="margin-top:.5rem">${badgeStatus(p.status)}</div>
+      ${p.tutores?`<div class="pet-tutor">👤 ${esc(p.tutores.nome)} · ${fmtTelefone(p.tutores.telefone)}</div>`:''}
+    </div>`).join('')}</div>`;
+}
+
+async function abrirModal(id = null) {
+  editandoId = id;
+  const modal = document.getElementById('modal-paciente');
+  const btnExc = document.getElementById('btn-excluir-pac');
+  document.getElementById('modal-titulo').textContent = id ? 'Editar Paciente' : 'Novo Paciente';
+  btnExc.style.display = id ? 'inline-flex' : 'none';
+  // Reset
+  document.getElementById('form-paciente').reset();
+  document.getElementById('m-tutor-id').value='';
+  document.getElementById('m-tutor-nome').textContent='';
+  const mEsp = document.getElementById('m-especie');
+  popularRacas(mEsp, document.getElementById('m-raca'));
+
+  if (id) {
+    const p = todos.find(x=>x.id===id);
+    if (p) {
+      document.getElementById('m-nome').value=p.nome||'';
+      mEsp.value=p.especie||'Cachorro';
+      popularRacas(mEsp, document.getElementById('m-raca'), p.raca||'');
+      document.getElementById('m-sexo').value=p.sexo||'';
+      document.getElementById('m-nasc').value=p.data_nascimento||'';
+      document.getElementById('m-peso').value=p.peso||'';
+      document.getElementById('m-cor').value=p.cor||'';
+      document.getElementById('m-status').value=p.status||'ativo';
+      document.getElementById('m-castrado').checked=!!p.castrado;
+      document.getElementById('m-obs').value=p.observacoes||'';
+      if (p.tutor_id) {
+        document.getElementById('m-tutor-id').value=p.tutor_id;
+        document.getElementById('m-tutor-nome').textContent=p.tutores?'Tutor: '+p.tutores.nome:'';
+      }
+    }
+  }
+  modal.classList.add('open');
+}
+
+function fecharModal() { document.getElementById('modal-paciente').classList.remove('open'); }
+
+async function salvar(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-salvar-pac');
+  btn.disabled=true; btn.textContent='Salvando...';
+  const payload = {
+    nome: document.getElementById('m-nome').value.trim(),
+    especie: document.getElementById('m-especie').value,
+    raca: document.getElementById('m-raca').value||null,
+    sexo: document.getElementById('m-sexo').value||null,
+    data_nascimento: document.getElementById('m-nasc').value||null,
+    peso: document.getElementById('m-peso').value?Number(document.getElementById('m-peso').value):null,
+    cor: document.getElementById('m-cor').value||null,
+    status: document.getElementById('m-status').value,
+    castrado: document.getElementById('m-castrado').checked,
+    tutor_id: document.getElementById('m-tutor-id').value||null,
+    observacoes: document.getElementById('m-obs').value||null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = editandoId
+    ? await dbClient.from('pacientes').update(payload).eq('id',editandoId)
+    : await dbClient.from('pacientes').insert(payload);
+  if (error) { toast('Erro: '+error.message,'error'); btn.disabled=false; btn.textContent='Salvar'; return; }
+  toast(editandoId?'Paciente atualizado!':'Paciente cadastrado!');
+  fecharModal();
+  await carregar();
+  btn.disabled=false; btn.textContent='Salvar';
+}
+
+async function excluir() {
+  if (!confirm('Excluir este paciente?')) return;
+  await dbClient.from('pacientes').delete().eq('id',editandoId);
+  toast('Paciente removido.');
+  fecharModal();
+  await carregar();
+}
+</script>
+</body>
+</html>

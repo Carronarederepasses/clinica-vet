@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goldefeder — Tutores</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
+  <div class="nav-links">
+    <a href="home.html">Dashboard</a>
+    <a href="index.html">+ Atendimento</a>
+    <a href="pacientes.html">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html">Procedimentos</a>
+    <a href="tutores.html" class="active">Tutores</a>
+    <a href="busca.html">Busca</a>
+  </div>
+</nav>
+<main>
+  <h1>Tutores</h1>
+  <p class="subtitle" id="sub-total">Carregando...</p>
+
+  <div class="filters">
+    <input type="text" id="busca" placeholder="Buscar por nome, telefone, cidade...">
+    <button class="btn btn-outline btn-sm" id="btn-limpar">Limpar</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="abrirModal()">+ Novo tutor</button>
+  </div>
+
+  <div id="lista-container"><div class="empty-state"><p>Carregando...</p></div></div>
+</main>
+<div id="toast"></div>
+
+<div class="modal-overlay" id="modal-tutor">
+  <div class="modal" style="max-width:640px">
+    <h3 id="modal-titulo">Novo Tutor</h3>
+    <form id="form-tutor" novalidate style="margin-top:1rem">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="m-nome">Nome *</label>
+          <input type="text" id="m-nome" placeholder="Nome completo" required>
+        </div>
+        <div class="form-group">
+          <label for="m-cpf">CPF</label>
+          <input type="text" id="m-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="m-tel">Telefone *</label>
+          <input type="tel" id="m-tel" placeholder="(48) 99999-9999" maxlength="15" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="m-email">E-mail</label>
+          <input type="email" id="m-email" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label for="m-cep">CEP</label>
+          <input type="text" id="m-cep" placeholder="00000-000" maxlength="9" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="m-logr">Logradouro</label>
+          <input type="text" id="m-logr" placeholder="Rua, Avenida...">
+        </div>
+        <div class="form-group">
+          <label for="m-num">Número</label>
+          <input type="text" id="m-num" placeholder="123">
+        </div>
+        <div class="form-group">
+          <label for="m-comp">Complemento</label>
+          <input type="text" id="m-comp" placeholder="Apto, bloco...">
+        </div>
+        <div class="form-group">
+          <label for="m-bairro">Bairro</label>
+          <input type="text" id="m-bairro">
+        </div>
+        <div class="form-group">
+          <label for="m-cidade">Cidade</label>
+          <input type="text" id="m-cidade">
+        </div>
+        <div class="form-group">
+          <label for="m-estado">Estado</label>
+          <input type="text" id="m-estado" maxlength="2" style="text-transform:uppercase">
+        </div>
+        <div class="form-group full">
+          <label for="m-obs">Observações</label>
+          <textarea id="m-obs" placeholder="Informações relevantes sobre o tutor..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-danger btn-sm" id="btn-excluir" style="display:none;margin-right:auto">Excluir</button>
+        <button type="button" class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btn-salvar">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let todos = [];
+let editandoId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!initSupabase()) return;
+  await carregar();
+
+  document.getElementById('m-cpf').addEventListener('input', e => e.target.value = mascaraCPF(e.target.value));
+  document.getElementById('m-tel').addEventListener('input', e => e.target.value = mascaraTelefone(e.target.value));
+  document.getElementById('m-cep').addEventListener('input', e => e.target.value = mascaraCEP(e.target.value));
+  document.getElementById('m-cep').addEventListener('blur', async e => {
+    const cep = e.target.value.replace(/\D/g,'');
+    if (cep.length === 8) await buscarCEP(cep, d => {
+      document.getElementById('m-logr').value = d.logradouro||'';
+      document.getElementById('m-bairro').value = d.bairro||'';
+      document.getElementById('m-cidade').value = d.localidade||'';
+      document.getElementById('m-estado').value = d.uf||'';
+      document.getElementById('m-num').focus();
+    });
+  });
+  document.getElementById('m-estado').addEventListener('input', e => e.target.value = e.target.value.toUpperCase());
+  document.getElementById('busca').addEventListener('input', renderFiltrado);
+  document.getElementById('btn-limpar').addEventListener('click', () => { document.getElementById('busca').value=''; renderFiltrado(); });
+  document.getElementById('form-tutor').addEventListener('submit', salvar);
+  document.getElementById('btn-excluir').addEventListener('click', excluir);
+});
+
+async function carregar() {
+  const { data } = await dbClient.from('tutores')
+    .select('*, pacientes(id)')
+    .order('nome');
+  todos = (data||[]).map(t => ({ ...t, total_pets: (t.pacientes||[]).length }));
+  document.getElementById('sub-total').textContent = `${todos.length} tutor(es) cadastrado(s)`;
+  renderFiltrado();
+}
+
+function renderFiltrado() {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  let lista = todos.filter(t => {
+    if (!busca) return true;
+    return [t.nome,t.telefone,t.cidade,t.email].filter(Boolean).join(' ').toLowerCase().includes(busca);
+  });
+  const c = document.getElementById('lista-container');
+  if (!lista.length) { c.innerHTML='<div class="empty-state"><p>Nenhum tutor encontrado.</p></div>'; return; }
+  const rows = lista.map(t=>`
+    <tr onclick="abrirModal('${t.id}')" style="cursor:pointer">
+      <td><strong>${esc(t.nome)}</strong></td>
+      <td>${fmtTelefone(t.telefone)}</td>
+      <td>${esc(t.email||'—')}</td>
+      <td>${esc(t.cidade||'—')}</td>
+      <td>${t.total_pets} pet(s)</td>
+      <td><a href="prontuario.html?tutor=${t.id}" onclick="event.stopPropagation()" class="btn btn-outline btn-sm">Prontuário</a></td>
+    </tr>`).join('');
+  c.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cidade</th><th>Pets</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+async function abrirModal(id=null) {
+  editandoId=id;
+  document.getElementById('modal-titulo').textContent = id?'Editar Tutor':'Novo Tutor';
+  document.getElementById('btn-excluir').style.display = id?'inline-flex':'none';
+  document.getElementById('form-tutor').reset();
+  if (id) {
+    const t = todos.find(x=>x.id===id);
+    if (t) {
+      document.getElementById('m-nome').value=t.nome||'';
+      document.getElementById('m-cpf').value=t.cpf?mascaraCPF(t.cpf):'';
+      document.getElementById('m-tel').value=t.telefone?mascaraTelefone(t.telefone):'';
+      document.getElementById('m-email').value=t.email||'';
+      document.getElementById('m-cep').value=t.cep?mascaraCEP(t.cep):'';
+      document.getElementById('m-logr').value=t.logradouro||'';
+      document.getElementById('m-num').value=t.numero||'';
+      document.getElementById('m-comp').value=t.complemento||'';
+      document.getElementById('m-bairro').value=t.bairro||'';
+      document.getElementById('m-cidade').value=t.cidade||'';
+      document.getElementById('m-estado').value=t.estado||'';
+      document.getElementById('m-obs').value=t.observacoes||'';
+    }
+  }
+  document.getElementById('modal-tutor').classList.add('open');
+}
+
+function fecharModal() { document.getElementById('modal-tutor').classList.remove('open'); }
+
+async function salvar(e) {
+  e.preventDefault();
+  const btn=document.getElementById('btn-salvar');
+  btn.disabled=true; btn.textContent='Salvando...';
+  const payload={
+    nome: document.getElementById('m-nome').value.trim(),
+    cpf: document.getElementById('m-cpf').value.replace(/\D/g,'')||null,
+    telefone: document.getElementById('m-tel').value.replace(/\D/g,'')||null,
+    email: document.getElementById('m-email').value||null,
+    cep: document.getElementById('m-cep').value.replace(/\D/g,'')||null,
+    logradouro: document.getElementById('m-logr').value||null,
+    numero: document.getElementById('m-num').value||null,
+    complemento: document.getElementById('m-comp').value||null,
+    bairro: document.getElementById('m-bairro').value||null,
+    cidade: document.getElementById('m-cidade').value||null,
+    estado: document.getElementById('m-estado').value||null,
+    observacoes: document.getElementById('m-obs').value||null,
+    updated_at: new Date().toISOString(),
+  };
+  const {error} = editandoId
+    ? await dbClient.from('tutores').update(payload).eq('id',editandoId)
+    : await dbClient.from('tutores').insert(payload);
+  if (error){toast('Erro: '+error.message,'error');btn.disabled=false;btn.textContent='Salvar';return;}
+  toast(editandoId?'Tutor atualizado!':'Tutor cadastrado!');
+  fecharModal(); await carregar();
+  btn.disabled=false; btn.textContent='Salvar';
+}
+
+async function excluir(){
+  if(!confirm('Excluir este tutor?'))return;
+  await dbClient.from('tutores').delete().eq('id',editandoId);
+  toast('Tutor removido.'); fecharModal(); await carregar();
+}
+</script>
+</body>
+</html>

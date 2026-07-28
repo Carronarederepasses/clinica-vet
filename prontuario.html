@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goldefeder — Prontuário</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .search-pac-wrap { position:relative; max-width:480px; }
+    .timeline { position:relative; padding-left:2rem; }
+    .timeline::before { content:''; position:absolute; left:.6rem; top:0; bottom:0; width:2px; background:var(--gray-200); }
+    .timeline-item { position:relative; margin-bottom:1.5rem; }
+    .timeline-dot {
+      position:absolute; left:-1.65rem; top:.3rem;
+      width:12px; height:12px; border-radius:50%;
+      background:var(--black); border:2px solid var(--white);
+      box-shadow:0 0 0 2px var(--gray-200);
+    }
+    .timeline-dot.proc { background:var(--gray-600); }
+    .timeline-card {
+      background:var(--white); border:1px solid var(--gray-200);
+      border-radius:var(--radius); padding:1rem 1.25rem;
+    }
+    .timeline-card:hover { border-color:var(--gray-400); }
+    .timeline-date { font-size:.75rem; color:var(--gray-600); margin-bottom:.35rem; }
+    .timeline-title { font-weight:700; font-size:.9rem; margin-bottom:.35rem; }
+    .timeline-detalhe { font-size:.825rem; color:var(--gray-600); }
+    .ficha-pet {
+      display:flex; gap:1.5rem; align-items:flex-start;
+      background:var(--white); border:1px solid var(--gray-200);
+      border-radius:var(--radius); padding:1.5rem; margin-bottom:2rem;
+    }
+    .ficha-avatar { font-size:3rem; line-height:1; }
+    .ficha-nome { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:700; }
+    .ficha-linha { font-size:.85rem; color:var(--gray-600); margin-top:.2rem; }
+    .ficha-tutor { margin-top:.75rem; padding-top:.75rem; border-top:1px solid var(--gray-100); font-size:.85rem; }
+    .autocomplete-list {
+      position:absolute; top:100%; left:0; right:0; z-index:200;
+      background:var(--white); border:1.5px solid var(--black);
+      border-top:none; border-radius:0 0 6px 6px;
+      max-height:220px; overflow-y:auto;
+    }
+    .autocomplete-item { padding:.6rem .85rem; cursor:pointer; font-size:.875rem; border-bottom:1px solid var(--gray-100); }
+    .autocomplete-item:hover { background:var(--gray-100); }
+    .autocomplete-item small { color:var(--gray-600); display:block; font-size:.75rem; }
+  </style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
+  <div class="nav-links">
+    <a href="home.html">Dashboard</a>
+    <a href="index.html">+ Atendimento</a>
+    <a href="pacientes.html">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html">Procedimentos</a>
+    <a href="tutores.html">Tutores</a>
+    <a href="busca.html">Busca</a>
+  </div>
+</nav>
+<main>
+  <h1>Prontuário</h1>
+  <p class="subtitle">Histórico completo por paciente.</p>
+
+  <div class="search-pac-wrap" id="wrap-busca">
+    <input type="text" id="busca-pac" placeholder="Buscar paciente pelo nome..." autocomplete="off" style="width:100%">
+    <div class="autocomplete-list" id="lista-pac-auto" style="display:none"></div>
+  </div>
+
+  <div id="prontuario-content" style="margin-top:2rem"></div>
+</main>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const EMOJI = { Cachorro:'🐕', Gato:'🐈', Ave:'🦜', Coelho:'🐇', Réptil:'🦎', Outro:'🐾' };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!initSupabase()) return;
+
+  // Autocomplete paciente
+  const inp = document.getElementById('busca-pac');
+  const lst = document.getElementById('lista-pac-auto');
+  let t;
+  inp.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const results = await buscarPacientes(inp.value);
+      if (!results.length) { lst.style.display='none'; return; }
+      lst.innerHTML = results.map(p=>`<div class="autocomplete-item" data-id="${p.id}">
+        <strong>${esc(p.nome)}</strong>
+        <small>${esc(p.especie||'')} · ${esc(p.raca||'')} · ${esc(p.tutores?.nome||'')}</small>
+      </div>`).join('');
+      lst.style.display='';
+      lst.querySelectorAll('.autocomplete-item').forEach((el,i)=>{
+        el.addEventListener('click',()=>{
+          inp.value=''; lst.style.display='none';
+          carregarProntuario(results[i].id);
+        });
+      });
+    }, 250);
+  });
+  document.addEventListener('click', e => { if (!lst.contains(e.target) && e.target!==inp) lst.style.display='none'; });
+
+  // Checa URL params
+  const params = new URLSearchParams(location.search);
+  if (params.get('paciente')) carregarProntuario(params.get('paciente'));
+  else if (params.get('tutor')) carregarProntuarioPorTutor(params.get('tutor'));
+});
+
+async function carregarProntuario(pacienteId) {
+  const c = document.getElementById('prontuario-content');
+  c.innerHTML = '<div class="empty-state"><p>Carregando...</p></div>';
+
+  const [{data: pac}, {data: ats}, {data: procs}] = await Promise.all([
+    dbClient.from('pacientes').select('*,tutores(nome,telefone,cidade)').eq('id',pacienteId).single(),
+    dbClient.from('atendimentos').select('*').eq('paciente_id',pacienteId).order('data_atendimento',{ascending:false}),
+    dbClient.from('procedimentos').select('*').eq('paciente_id',pacienteId).order('data_procedimento',{ascending:false}),
+  ]);
+
+  if (!pac) { c.innerHTML='<div class="empty-state"><p>Paciente não encontrado.</p></div>'; return; }
+
+  // Ficha do pet
+  const fichaHtml = `
+    <div class="ficha-pet">
+      <div class="ficha-avatar">${EMOJI[pac.especie]||'🐾'}</div>
+      <div style="flex:1">
+        <div class="ficha-nome">${esc(pac.nome)}</div>
+        <div class="ficha-linha">${esc(pac.especie||'')} · ${esc(pac.raca||'SRD')} · ${pac.sexo||'—'} · ${pac.castrado?'Castrado(a)':'Inteiro(a)'}</div>
+        <div class="ficha-linha">Nascimento: ${fmtData(pac.data_nascimento)} (${fmtIdade(pac.data_nascimento)}) · Peso: ${pac.peso?pac.peso+' kg':'—'} · Cor: ${esc(pac.cor||'—')}</div>
+        ${pac.observacoes?`<div class="ficha-linha" style="margin-top:.4rem">📝 ${esc(pac.observacoes)}</div>`:''}
+        <div class="ficha-tutor">
+          👤 <strong>${esc(pac.tutores?.nome||'—')}</strong>
+          · ${fmtTelefone(pac.tutores?.telefone)}
+          · ${esc(pac.tutores?.cidade||'—')}
+        </div>
+      </div>
+      <div>
+        ${badgeStatus(pac.status)}
+        <div style="margin-top:.5rem;font-size:.75rem;color:#aaa">desde ${fmtData(pac.created_at)}</div>
+      </div>
+    </div>`;
+
+  // KPIs
+  const recAt = (ats||[]).filter(a=>a.status==='realizado').reduce((s,a)=>s+(Number(a.valor)||0),0);
+  const recProc = (procs||[]).filter(p=>p.status==='realizado').reduce((s,p)=>s+(Number(p.valor)||0),0);
+  const kpisHtml = `
+    <div class="kpi-grid" style="margin-bottom:2rem">
+      <div class="kpi-card"><div class="kpi-label">Consultas</div><div class="kpi-value">${(ats||[]).length}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Procedimentos</div><div class="kpi-value">${(procs||[]).length}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Gasto total</div><div class="kpi-value" style="font-size:1.2rem">${fmtMoeda(recAt+recProc)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Último atendimento</div><div class="kpi-value" style="font-size:1rem">${(ats||[]).length?fmtData((ats||[])[0].data_atendimento):'—'}</div></div>
+    </div>`;
+
+  // Timeline combinada
+  const eventos = [
+    ...(ats||[]).map(a=>({...a, _tipo:'atendimento', _data:a.data_atendimento})),
+    ...(procs||[]).map(p=>({...p, _tipo:'procedimento', _data:p.data_procedimento})),
+  ].sort((a,b)=>b._data>a._data?1:-1);
+
+  const timelineHtml = eventos.length ? `
+    <div class="section-header" style="margin-bottom:1.25rem">
+      <span class="section-title">Histórico</span>
+    </div>
+    <div class="timeline">${eventos.map(ev=>{
+      const isProc = ev._tipo==='procedimento';
+      const link = isProc?`procedimentos.html?id=${ev.id}`:`atendimentos.html?id=${ev.id}`;
+      const detalhe = isProc
+        ? [ev.anestesia?'Anestesia: '+ev.anestesia:null, ev.duracao_min?ev.duracao_min+'min':null, ev.intercorrencias?'⚠️ '+ev.intercorrencias:null].filter(Boolean).join(' · ')
+        : [ev.queixa_principal, ev.diagnostico?'Dx: '+ev.diagnostico:null, ev.prescricao?'Rx: '+ev.prescricao:null].filter(Boolean).join(' · ');
+      return `<div class="timeline-item">
+        <div class="timeline-dot${isProc?' proc':''}"></div>
+        <div class="timeline-card" onclick="location.href='${link}'" style="cursor:pointer">
+          <div class="timeline-date">${fmtDataHora(ev._data)} · ${badgeStatus(ev.status)} · ${isProc?'🔪 Procedimento':'🩺 Consulta/Exame'}</div>
+          <div class="timeline-title">${esc(ev.tipo||'—')} ${ev.valor?'· '+fmtMoeda(ev.valor):''}</div>
+          ${detalhe?`<div class="timeline-detalhe">${esc(detalhe)}</div>`:''}
+          ${ev.observacoes?`<div class="timeline-detalhe" style="margin-top:.3rem">📝 ${esc(ev.observacoes)}</div>`:''}
+        </div>
+      </div>`;
+    }).join('')}</div>`
+  : '<div class="empty-state"><p>Nenhum atendimento registrado ainda.</p></div>';
+
+  c.innerHTML = fichaHtml + kpisHtml + timelineHtml;
+}
+
+async function carregarProntuarioPorTutor(tutorId) {
+  const c = document.getElementById('prontuario-content');
+  c.innerHTML = '<div class="empty-state"><p>Carregando...</p></div>';
+  const {data: tutor} = await dbClient.from('tutores').select('*').eq('id',tutorId).single();
+  const {data: pacs} = await dbClient.from('pacientes').select('*').eq('tutor_id',tutorId).eq('status','ativo');
+  if (!tutor) { c.innerHTML='<div class="empty-state"><p>Tutor não encontrado.</p></div>'; return; }
+
+  let html = `<div style="margin-bottom:1.5rem">
+    <h2 style="font-family:'Playfair Display',serif">${esc(tutor.nome)}</h2>
+    <p style="color:#666;font-size:.875rem">${fmtTelefone(tutor.telefone)} · ${esc(tutor.cidade||'—')}</p>
+  </div>`;
+
+  if (!pacs?.length) { html+='<div class="empty-state"><p>Nenhum paciente vinculado.</p></div>'; c.innerHTML=html; return; }
+
+  html += `<p style="font-size:.875rem;color:#666;margin-bottom:1rem">${pacs.length} paciente(s) — clique para ver o prontuário completo</p>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem">${pacs.map(p=>`
+    <div onclick="carregarProntuario('${p.id}')" style="cursor:pointer;border:1px solid var(--gray-200);border-radius:6px;padding:1rem;transition:border-color .15s" onmouseover="this.style.borderColor='#000'" onmouseout="this.style.borderColor='#e8e8e8'">
+      <div style="font-size:2rem">${EMOJI[p.especie]||'🐾'}</div>
+      <div style="font-weight:700;margin-top:.5rem">${esc(p.nome)}</div>
+      <div style="font-size:.8rem;color:#666">${esc(p.especie||'')} · ${esc(p.raca||'SRD')}</div>
+      <div style="margin-top:.5rem">${badgeStatus(p.status)}</div>
+    </div>`).join('')}</div>`;
+
+  c.innerHTML = html;
+}
+</script>
+</body>
+</html>

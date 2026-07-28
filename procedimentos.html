@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goldefeder — Procedimentos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
+  <div class="nav-links">
+    <a href="home.html">Dashboard</a>
+    <a href="index.html">+ Atendimento</a>
+    <a href="pacientes.html">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html" class="active">Procedimentos</a>
+    <a href="tutores.html">Tutores</a>
+    <a href="busca.html">Busca</a>
+  </div>
+</nav>
+<main>
+  <h1>Procedimentos</h1>
+  <p class="subtitle">Cirurgias e intervenções cardíacas.</p>
+
+  <div class="kpi-grid" style="margin-bottom:1.5rem">
+    <div class="kpi-card">
+      <div class="kpi-label">Total</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub">procedimentos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Realizados</div>
+      <div class="kpi-value" id="kpi-real">—</div>
+      <div class="kpi-sub" id="kpi-receita">receita —</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Agendados</div>
+      <div class="kpi-value" id="kpi-agend">—</div>
+      <div class="kpi-sub">próximos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Ticket médio</div>
+      <div class="kpi-value" id="kpi-ticket">—</div>
+      <div class="kpi-sub">por procedimento</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="busca" placeholder="Pet, tutor, tipo...">
+    <select id="filtro-status">
+      <option value="">Todos</option>
+      <option value="agendado">Agendado</option>
+      <option value="realizado">Realizado</option>
+      <option value="cancelado">Cancelado</option>
+    </select>
+    <input type="month" id="filtro-mes" title="Filtrar por mês">
+    <button class="btn btn-outline btn-sm" id="btn-limpar">Limpar</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="abrirModal()">⚡ Entrada rápida</button>
+  </div>
+
+  <div id="lista-container"><div class="empty-state"><p>Carregando...</p></div></div>
+</main>
+<div id="toast"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-proc">
+  <div class="modal" style="max-width:640px">
+    <h3 id="modal-titulo">Procedimento</h3>
+    <form id="form-proc" novalidate style="margin-top:1rem">
+      <div class="form-grid">
+        <div class="form-group full" id="info-pac-proc" style="display:none;background:var(--gray-100);padding:.75rem;border-radius:var(--radius);font-size:.875rem"></div>
+
+        <!-- Busca paciente (só para novo) -->
+        <div class="form-group full" id="bloco-busca-pac" style="position:relative">
+          <label>Paciente</label>
+          <input type="text" id="m-busca-pac" placeholder="Buscar paciente..." autocomplete="off">
+          <div id="m-lista-pac" style="position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--white);border:1.5px solid var(--black);border-top:none;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;display:none"></div>
+          <input type="hidden" id="m-pac-id">
+          <span id="m-pac-nome" style="font-size:.8rem;color:var(--gray-600)"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="m-tipo">Tipo</label>
+          <select id="m-tipo">
+            <option>Cirurgia Cardíaca</option>
+            <option>Implante de Pacemaker</option>
+            <option>Pericardiectomia</option>
+            <option>Correção de Shunt</option>
+            <option>Biopsia Cardíaca</option>
+            <option>Outro procedimento</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="m-data">Data e Hora</label>
+          <input type="datetime-local" id="m-data">
+        </div>
+        <div class="form-group">
+          <label for="m-status">Status</label>
+          <select id="m-status">
+            <option value="agendado">Agendado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="m-valor">Valor (R$)</label>
+          <input type="number" id="m-valor" placeholder="0,00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label for="m-pag">Pagamento</label>
+          <select id="m-pag">
+            <option value="">—</option><option>PIX</option><option>Dinheiro</option>
+            <option>Cartão de Débito</option><option>Cartão de Crédito</option>
+            <option>Parcelado</option><option>Convênio</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="m-anest">Anestesia</label>
+          <input type="text" id="m-anest" placeholder="Ex: Geral inalatória">
+        </div>
+        <div class="form-group">
+          <label for="m-dur">Duração (min)</label>
+          <input type="number" id="m-dur" placeholder="Ex: 90" min="0">
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:.5rem;padding-top:1.5rem">
+          <input type="checkbox" id="m-nf" style="width:16px;height:16px;cursor:pointer;accent-color:#000">
+          <label for="m-nf" style="margin:0;cursor:pointer;font-weight:500">NF emitida</label>
+        </div>
+        <div class="form-group full">
+          <label for="m-inter">Intercorrências</label>
+          <textarea id="m-inter"></textarea>
+        </div>
+        <div class="form-group full">
+          <label for="m-obs">Observações / Pós-op</label>
+          <textarea id="m-obs"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-danger btn-sm" id="btn-excluir-proc" style="display:none;margin-right:auto">Excluir</button>
+        <button type="button" class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+let todos=[], editandoId=null;
+const urlId = new URLSearchParams(location.search).get('id');
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!initSupabase()) return;
+  await carregar();
+  if (urlId) abrirModal(urlId);
+
+  document.getElementById('busca').addEventListener('input', renderFiltrado);
+  document.getElementById('filtro-status').addEventListener('change', renderFiltrado);
+  document.getElementById('filtro-mes').addEventListener('change', renderFiltrado);
+  document.getElementById('btn-limpar').addEventListener('click', () => {
+    document.getElementById('busca').value='';
+    document.getElementById('filtro-status').value='';
+    document.getElementById('filtro-mes').value='';
+    renderFiltrado();
+  });
+
+  // Autocomplete paciente no modal
+  const inp=document.getElementById('m-busca-pac');
+  const lst=document.getElementById('m-lista-pac');
+  let t;
+  inp.addEventListener('input',()=>{
+    clearTimeout(t);
+    t=setTimeout(async()=>{
+      const res=await buscarPacientes(inp.value);
+      if(!res.length){lst.style.display='none';return;}
+      lst.innerHTML=res.map(p=>`<div class="autocomplete-item" data-id="${p.id}"><strong>${esc(p.nome)}</strong><small>${esc(p.especie||'')} ${esc(p.raca||'')}</small></div>`).join('');
+      lst.style.display='';
+      lst.querySelectorAll('.autocomplete-item').forEach((el,i)=>{
+        el.addEventListener('click',()=>{
+          document.getElementById('m-pac-id').value=res[i].id;
+          document.getElementById('m-pac-nome').textContent='Paciente: '+res[i].nome;
+          inp.value=''; lst.style.display='none';
+        });
+      });
+    },250);
+  });
+
+  document.getElementById('form-proc').addEventListener('submit', salvar);
+  document.getElementById('btn-excluir-proc').addEventListener('click', excluir);
+});
+
+async function carregar() {
+  const {data}=await dbClient.from('procedimentos')
+    .select('*,pacientes(nome,especie,raca),tutores(nome,telefone)')
+    .order('data_procedimento',{ascending:false});
+  todos=data||[];
+
+  const realizados=todos.filter(p=>p.status==='realizado');
+  const receita=realizados.reduce((s,p)=>s+(Number(p.valor)||0),0);
+  document.getElementById('kpi-total').textContent=todos.length;
+  document.getElementById('kpi-real').textContent=realizados.length;
+  document.getElementById('kpi-receita').textContent='receita '+fmtMoeda(receita);
+  document.getElementById('kpi-agend').textContent=todos.filter(p=>p.status==='agendado').length;
+  document.getElementById('kpi-ticket').textContent=fmtMoeda(realizados.length?receita/realizados.length:0);
+  renderFiltrado();
+}
+
+function renderFiltrado(){
+  const busca=document.getElementById('busca').value.toLowerCase();
+  const st=document.getElementById('filtro-status').value;
+  const mes=document.getElementById('filtro-mes').value;
+  let lista=todos.filter(p=>{
+    if(st && p.status!==st)return false;
+    if(mes && !p.data_procedimento.startsWith(mes))return false;
+    if(busca){
+      const txt=[p.pacientes?.nome,p.tutores?.nome,p.tipo].filter(Boolean).join(' ').toLowerCase();
+      if(!txt.includes(busca))return false;
+    }
+    return true;
+  });
+  const c=document.getElementById('lista-container');
+  if(!lista.length){c.innerHTML='<div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>';return;}
+  const rows=lista.map(p=>`
+    <tr onclick="abrirModal('${p.id}')" style="cursor:pointer">
+      <td>${fmtDataHora(p.data_procedimento)}</td>
+      <td><strong>${esc(p.pacientes?.nome||'—')}</strong></td>
+      <td>${esc(p.tutores?.nome||'—')}</td>
+      <td>${esc(p.tipo||'—')}</td>
+      <td>${p.duracao_min?p.duracao_min+'min':'—'}</td>
+      <td>${fmtMoeda(p.valor)}</td>
+      <td>${badgeStatus(p.status)}</td>
+      <td>${p.nf_emitida ? '<span style="color:#16a34a;font-weight:600;font-size:.8rem">✓ NF</span>' : '<span style="color:#aaa;font-size:.8rem">—</span>'}</td>
+    </tr>`).join('');
+  c.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Data/Hora</th><th>Paciente</th><th>Tutor</th><th>Tipo</th><th>Duração</th><th>Valor</th><th>Status</th><th>NF</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function abrirModal(id=null){
+  editandoId=id;
+  const isNovo=!id;
+  document.getElementById('modal-titulo').textContent=isNovo?'Novo Procedimento':'Editar Procedimento';
+  document.getElementById('btn-excluir-proc').style.display=isNovo?'none':'inline-flex';
+  document.getElementById('bloco-busca-pac').style.display=isNovo?'':'none';
+  document.getElementById('info-pac-proc').style.display=isNovo?'none':'';
+  document.getElementById('m-pac-id').value='';
+  document.getElementById('m-pac-nome').textContent='';
+  document.getElementById('m-busca-pac').value='';
+
+  const agora=new Date();agora.setMinutes(agora.getMinutes()-agora.getTimezoneOffset());
+  document.getElementById('m-data').value=agora.toISOString().slice(0,16);
+  document.getElementById('m-status').value='agendado';
+  document.getElementById('m-valor').value='';
+  document.getElementById('m-pag').value='';
+  document.getElementById('m-anest').value='';
+  document.getElementById('m-dur').value='';
+  document.getElementById('m-inter').value='';
+  document.getElementById('m-obs').value='';
+
+  if (id) {
+    const p=todos.find(x=>x.id===id);
+    if(p){
+      document.getElementById('info-pac-proc').innerHTML=`<strong>${esc(p.pacientes?.nome||'—')}</strong> · ${esc(p.pacientes?.especie||'')} ${esc(p.pacientes?.raca||'')} &nbsp;|&nbsp; 👤 ${esc(p.tutores?.nome||'—')} · ${fmtTelefone(p.tutores?.telefone)}`;
+      document.getElementById('m-tipo').value=p.tipo||'Cirurgia Cardíaca';
+      const d=new Date(p.data_procedimento);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+      document.getElementById('m-data').value=d.toISOString().slice(0,16);
+      document.getElementById('m-status').value=p.status;
+      document.getElementById('m-valor').value=p.valor||'';
+      document.getElementById('m-pag').value=p.forma_pagamento||'';
+      document.getElementById('m-nf').checked=!!p.nf_emitida;
+      document.getElementById('m-anest').value=p.anestesia||'';
+      document.getElementById('m-dur').value=p.duracao_min||'';
+      document.getElementById('m-inter').value=p.intercorrencias||'';
+      document.getElementById('m-obs').value=p.observacoes||'';
+    }
+  }
+  document.getElementById('modal-proc').classList.add('open');
+}
+
+function fecharModal(){document.getElementById('modal-proc').classList.remove('open');}
+
+async function salvar(e){
+  e.preventDefault();
+  const payload={
+    tipo:document.getElementById('m-tipo').value,
+    data_procedimento:document.getElementById('m-data').value,
+    status:document.getElementById('m-status').value,
+    valor:document.getElementById('m-valor').value?Number(document.getElementById('m-valor').value):null,
+    forma_pagamento:document.getElementById('m-pag').value||null,
+    nf_emitida:document.getElementById('m-nf').checked,
+    anestesia:document.getElementById('m-anest').value||null,
+    duracao_min:document.getElementById('m-dur').value?Number(document.getElementById('m-dur').value):null,
+    intercorrencias:document.getElementById('m-inter').value||null,
+    observacoes:document.getElementById('m-obs').value||null,
+    updated_at:new Date().toISOString(),
+  };
+  if(!editandoId) payload.paciente_id=document.getElementById('m-pac-id').value||null;
+  const {error}=editandoId
+    ? await dbClient.from('procedimentos').update(payload).eq('id',editandoId)
+    : await dbClient.from('procedimentos').insert(payload);
+  if(error){toast('Erro: '+error.message,'error');return;}
+  toast(editandoId?'Procedimento atualizado!':'Procedimento registrado!');
+  fecharModal(); await carregar();
+}
+
+async function excluir(){
+  if(!confirm('Excluir este procedimento?'))return;
+  await dbClient.from('procedimentos').delete().eq('id',editandoId);
+  toast('Procedimento removido.'); fecharModal(); await carregar();
+}
+</script>
+</body>
+</html>

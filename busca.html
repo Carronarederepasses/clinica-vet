@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goldefeder — Busca</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .busca-input-wrap { display:flex; gap:.75rem; margin-bottom:2rem; }
+    .busca-input-wrap input { flex:1; font-size:1.1rem; padding:.75rem 1rem; }
+    .resultado-grupo { margin-bottom:2rem; }
+    .resultado-grupo-title {
+      font-family:'Playfair Display',serif; font-size:1rem; font-weight:700;
+      margin-bottom:.75rem; padding-bottom:.5rem; border-bottom:2px solid var(--black);
+      display:flex; align-items:center; gap:.5rem;
+    }
+    .resultado-grupo-title span { font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:400; color:var(--gray-600); }
+  </style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
+  <div class="nav-links">
+    <a href="home.html">Dashboard</a>
+    <a href="index.html">+ Atendimento</a>
+    <a href="pacientes.html">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html">Procedimentos</a>
+    <a href="tutores.html">Tutores</a>
+    <a href="busca.html" class="active">Busca</a>
+  </div>
+</nav>
+<main>
+  <h1>Busca Global</h1>
+  <p class="subtitle">Pesquise em pacientes, tutores, consultas e procedimentos.</p>
+
+  <div class="busca-input-wrap">
+    <input type="text" id="busca-input" placeholder="Digite para buscar..." autocomplete="off" autofocus>
+    <button class="btn btn-primary" onclick="buscar()">Buscar</button>
+  </div>
+
+  <div id="resultados-container"></div>
+</main>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (!initSupabase()) return;
+  document.getElementById('busca-input').addEventListener('keydown', e => { if (e.key==='Enter') buscar(); });
+
+  // Checa se veio termo na URL
+  const q = new URLSearchParams(location.search).get('q');
+  if (q) { document.getElementById('busca-input').value=q; buscar(); }
+});
+
+async function buscar() {
+  const termo = document.getElementById('busca-input').value.trim();
+  if (termo.length < 2) { toast('Digite ao menos 2 caracteres.','error'); return; }
+  const c = document.getElementById('resultados-container');
+  c.innerHTML = '<div class="empty-state"><p>Buscando...</p></div>';
+
+  const like = `%${termo}%`;
+  const [
+    {data: pacs},
+    {data: tuts},
+    {data: ats},
+    {data: procs}
+  ] = await Promise.all([
+    dbClient.from('pacientes').select('id,nome,especie,raca,status,tutores(nome)').or(`nome.ilike.${like},raca.ilike.${like}`).limit(10),
+    dbClient.from('tutores').select('id,nome,telefone,cidade,email').or(`nome.ilike.${like},telefone.ilike.${like},cidade.ilike.${like}`).limit(10),
+    dbClient.from('atendimentos').select('id,tipo,data_atendimento,status,valor,pacientes(nome),tutores(nome)').or(`tipo.ilike.${like},queixa_principal.ilike.${like},diagnostico.ilike.${like}`).limit(10),
+    dbClient.from('procedimentos').select('id,tipo,data_procedimento,status,valor,pacientes(nome),tutores(nome)').or(`tipo.ilike.${like},observacoes.ilike.${like}`).limit(10),
+  ]);
+
+  const total = (pacs?.length||0)+(tuts?.length||0)+(ats?.length||0)+(procs?.length||0);
+  if (!total) { c.innerHTML='<div class="empty-state"><p>Nenhum resultado encontrado para "<strong>'+esc(termo)+'</strong>".</p></div>'; return; }
+
+  let html = '';
+
+  if (pacs?.length) {
+    const rows = pacs.map(p=>`
+      <tr onclick="location.href='pacientes.html'" style="cursor:pointer">
+        <td><strong>${esc(p.nome)}</strong></td>
+        <td>${esc(p.especie||'—')}</td>
+        <td>${esc(p.raca||'—')}</td>
+        <td>${badgeStatus(p.status)}</td>
+        <td>${esc(p.tutores?.nome||'—')}</td>
+        <td><a href="prontuario.html?paciente=${p.id}" class="btn btn-outline btn-sm" onclick="event.stopPropagation()">Prontuário</a></td>
+      </tr>`).join('');
+    html += `<div class="resultado-grupo">
+      <div class="resultado-grupo-title">🐾 Pacientes <span>${pacs.length} resultado(s)</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nome</th><th>Espécie</th><th>Raça</th><th>Status</th><th>Tutor</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  if (tuts?.length) {
+    const rows = tuts.map(t=>`
+      <tr onclick="location.href='tutores.html'" style="cursor:pointer">
+        <td><strong>${esc(t.nome)}</strong></td>
+        <td>${fmtTelefone(t.telefone)}</td>
+        <td>${esc(t.email||'—')}</td>
+        <td>${esc(t.cidade||'—')}</td>
+        <td><a href="prontuario.html?tutor=${t.id}" class="btn btn-outline btn-sm" onclick="event.stopPropagation()">Histórico</a></td>
+      </tr>`).join('');
+    html += `<div class="resultado-grupo">
+      <div class="resultado-grupo-title">👤 Tutores <span>${tuts.length} resultado(s)</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cidade</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  if (ats?.length) {
+    const rows = ats.map(a=>`
+      <tr onclick="location.href='atendimentos.html?id=${a.id}'" style="cursor:pointer">
+        <td>${fmtData(a.data_atendimento)}</td>
+        <td><strong>${esc(a.pacientes?.nome||'—')}</strong></td>
+        <td>${esc(a.tutores?.nome||'—')}</td>
+        <td>${esc(a.tipo||'—')}</td>
+        <td>${fmtMoeda(a.valor)}</td>
+        <td>${badgeStatus(a.status)}</td>
+      </tr>`).join('');
+    html += `<div class="resultado-grupo">
+      <div class="resultado-grupo-title">🩺 Consultas / Exames <span>${ats.length} resultado(s)</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>Paciente</th><th>Tutor</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  if (procs?.length) {
+    const rows = procs.map(p=>`
+      <tr onclick="location.href='procedimentos.html?id=${p.id}'" style="cursor:pointer">
+        <td>${fmtData(p.data_procedimento)}</td>
+        <td><strong>${esc(p.pacientes?.nome||'—')}</strong></td>
+        <td>${esc(p.tutores?.nome||'—')}</td>
+        <td>${esc(p.tipo||'—')}</td>
+        <td>${fmtMoeda(p.valor)}</td>
+        <td>${badgeStatus(p.status)}</td>
+      </tr>`).join('');
+    html += `<div class="resultado-grupo">
+      <div class="resultado-grupo-title">🔪 Procedimentos <span>${procs.length} resultado(s)</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>Paciente</th><th>Tutor</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+  }
+
+  c.innerHTML = html;
+}
+</script>
+</body>
+</html>

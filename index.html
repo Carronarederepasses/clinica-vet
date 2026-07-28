@@ -3,155 +3,485 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clínica Vet — Dashboard</title>
+  <title>Goldefeder — Novo Atendimento</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: var(--white); border: 1.5px solid var(--black);
+      border-top: none; border-radius: 0 0 var(--radius) var(--radius);
+      max-height: 220px; overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: .6rem .85rem; cursor: pointer; font-size: .875rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .autocomplete-item:hover { background: var(--gray-100); }
+    .autocomplete-item small { color: var(--gray-600); display: block; font-size: .75rem; }
+    .tipo-tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+    .tipo-tab {
+      flex: 1; padding: .75rem; text-align: center; border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius); cursor: pointer; font-weight: 600; font-size: .875rem;
+      transition: all .15s;
+    }
+    .tipo-tab.active { background: var(--black); color: var(--white); border-color: var(--black); }
+  </style>
 </head>
 <body>
-
 <nav>
-  <a class="nav-brand" href="index.html">Clínica Vet <span>Cirurgias</span></a>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
   <div class="nav-links">
-    <a href="index.html" class="active">Dashboard</a>
-    <a href="registro.html">+ Registro</a>
-    <a href="historico.html">Histórico</a>
+    <a href="home.html">Dashboard</a>
+    <a href="index.html" class="active">+ Atendimento</a>
+    <a href="pacientes.html">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html">Procedimentos</a>
+    <a href="tutores.html">Tutores</a>
+    <a href="busca.html">Busca</a>
   </div>
 </nav>
-
 <main>
-  <h1>Dashboard</h1>
-  <p class="subtitle" id="mes-ref">Carregando...</p>
+  <h1>Novo Atendimento</h1>
+  <p class="subtitle">Registre uma consulta, exame ou procedimento cirúrgico.</p>
 
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-label">Cirurgias no mês</div>
-      <div class="kpi-value" id="kpi-total">—</div>
-      <div class="kpi-sub" id="kpi-realizadas">— realizadas</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Receita no mês</div>
-      <div class="kpi-value" id="kpi-receita">—</div>
-      <div class="kpi-sub" id="kpi-ticket">ticket médio —</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Agendadas</div>
-      <div class="kpi-value" id="kpi-agendadas">—</div>
-      <div class="kpi-sub">próximas cirurgias</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Total acumulado</div>
-      <div class="kpi-value" id="kpi-acumulado">—</div>
-      <div class="kpi-sub">todas as cirurgias</div>
-    </div>
+  <div class="tipo-tabs">
+    <div class="tipo-tab active" data-tipo="atendimento" onclick="setTipo('atendimento',this)">Consulta / Exame</div>
+    <div class="tipo-tab" data-tipo="procedimento" onclick="setTipo('procedimento',this)">Procedimento Cirúrgico</div>
   </div>
 
-  <div class="section">
-    <div class="section-header">
-      <span class="section-title">Próximas Cirurgias</span>
-      <a href="historico.html" class="btn btn-outline btn-sm">Ver todas</a>
-    </div>
-    <div id="proximas-container">
-      <div class="empty-state"><p>Carregando...</p></div>
-    </div>
-  </div>
+  <form class="form-card" id="form-principal" novalidate>
 
-  <div class="section">
-    <div class="section-header">
-      <span class="section-title">Últimas Realizadas</span>
-      <a href="registro.html" class="btn btn-primary btn-sm">+ Nova cirurgia</a>
+    <!-- PACIENTE -->
+    <div class="form-section-title">Paciente</div>
+    <div class="form-grid">
+      <div class="form-group full autocomplete-wrap">
+        <label for="busca-paciente">Buscar paciente existente</label>
+        <input type="text" id="busca-paciente" placeholder="Digite o nome do pet..." autocomplete="off">
+        <div class="autocomplete-list" id="lista-pacientes" style="display:none"></div>
+      </div>
     </div>
-    <div id="recentes-container">
-      <div class="empty-state"><p>Carregando...</p></div>
+
+    <div id="bloco-paciente-novo" style="display:none">
+      <div style="display:flex;align-items:center;gap:.5rem;margin:.75rem 0;font-size:.8rem;color:#888">
+        <hr style="flex:1;border-color:var(--gray-200)"> Cadastrar novo paciente <hr style="flex:1;border-color:var(--gray-200)">
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nome_pet">Nome do Pet *</label>
+          <input type="text" id="nome_pet" placeholder="Ex: Thor">
+        </div>
+        <div class="form-group">
+          <label for="especie">Espécie</label>
+          <select id="especie">
+            <option>Cachorro</option><option>Gato</option><option>Ave</option>
+            <option>Coelho</option><option>Réptil</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="raca">Raça</label>
+          <select id="raca"><option value="">Selecione a espécie primeiro</option></select>
+        </div>
+        <div class="form-group">
+          <label for="sexo">Sexo</label>
+          <select id="sexo"><option value="">—</option><option>Macho</option><option>Fêmea</option></select>
+        </div>
+        <div class="form-group">
+          <label for="data_nascimento">Data de nascimento</label>
+          <input type="date" id="data_nascimento">
+        </div>
+        <div class="form-group">
+          <label for="peso">Peso (kg)</label>
+          <input type="number" id="peso" placeholder="Ex: 12.5" step="0.1" min="0">
+        </div>
+      </div>
     </div>
-  </div>
+
+    <div id="info-paciente-selecionado" style="display:none;background:var(--gray-100);padding:.75rem 1rem;border-radius:var(--radius);margin-top:.5rem;font-size:.875rem">
+      <strong id="info-pet-nome"></strong> — <span id="info-pet-detalhe"></span>
+      <button type="button" onclick="limparPaciente()" style="float:right;background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--gray-600)">✕ trocar</button>
+    </div>
+
+    <!-- TUTOR -->
+    <div class="form-section-title">Tutor</div>
+    <div class="form-grid">
+      <div class="form-group full autocomplete-wrap">
+        <label for="busca-tutor">Buscar tutor existente</label>
+        <input type="text" id="busca-tutor" placeholder="Digite o nome do tutor..." autocomplete="off">
+        <div class="autocomplete-list" id="lista-tutores" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="bloco-tutor-novo" style="display:none">
+      <div style="display:flex;align-items:center;gap:.5rem;margin:.75rem 0;font-size:.8rem;color:#888">
+        <hr style="flex:1;border-color:var(--gray-200)"> Cadastrar novo tutor <hr style="flex:1;border-color:var(--gray-200)">
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nome_tutor">Nome *</label>
+          <input type="text" id="nome_tutor" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label for="cpf_tutor">CPF</label>
+          <input type="text" id="cpf_tutor" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="telefone_tutor">Telefone *</label>
+          <input type="tel" id="telefone_tutor" placeholder="(48) 99999-9999" maxlength="15" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="cep_tutor">CEP</label>
+          <input type="text" id="cep_tutor" placeholder="00000-000" maxlength="9" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="logradouro_tutor">Logradouro</label>
+          <input type="text" id="logradouro_tutor" placeholder="Rua, Avenida...">
+        </div>
+        <div class="form-group">
+          <label for="numero_tutor">Número</label>
+          <input type="text" id="numero_tutor" placeholder="123">
+        </div>
+        <div class="form-group">
+          <label for="bairro_tutor">Bairro</label>
+          <input type="text" id="bairro_tutor">
+        </div>
+        <div class="form-group">
+          <label for="cidade_tutor">Cidade</label>
+          <input type="text" id="cidade_tutor">
+        </div>
+      </div>
+    </div>
+
+    <div id="info-tutor-selecionado" style="display:none;background:var(--gray-100);padding:.75rem 1rem;border-radius:var(--radius);margin-top:.5rem;font-size:.875rem">
+      <strong id="info-tutor-nome"></strong> — <span id="info-tutor-tel"></span>
+      <button type="button" onclick="limparTutor()" style="float:right;background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--gray-600)">✕ trocar</button>
+    </div>
+
+    <!-- ATENDIMENTO -->
+    <div id="bloco-atendimento">
+      <div class="form-section-title">Dados da Consulta / Exame</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tipo_atendimento">Tipo</label>
+          <select id="tipo_atendimento">
+            <option>Consulta</option>
+            <option>Retorno</option>
+            <option>Ecocardiograma</option>
+            <option>Eletrocardiograma</option>
+            <option>Holter</option>
+            <option>Radiografia</option>
+            <option>Outro exame</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="data_atendimento">Data e Hora *</label>
+          <input type="datetime-local" id="data_atendimento">
+        </div>
+        <div class="form-group">
+          <label for="status_atendimento">Status</label>
+          <select id="status_atendimento">
+            <option value="agendado">Agendado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="valor_atendimento">Valor (R$)</label>
+          <input type="number" id="valor_atendimento" placeholder="0,00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label for="pagamento_atendimento">Pagamento</label>
+          <select id="pagamento_atendimento">
+            <option value="">—</option>
+            <option>PIX</option><option>Dinheiro</option>
+            <option>Cartão de Débito</option><option>Cartão de Crédito</option>
+            <option>Parcelado</option><option>Convênio</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="retorno_em">Retorno em</label>
+          <input type="date" id="retorno_em">
+        </div>
+        <div class="form-group full">
+          <label for="queixa_principal">Queixa principal</label>
+          <textarea id="queixa_principal" placeholder="Motivo da consulta..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label for="diagnostico">Diagnóstico / Achados</label>
+          <textarea id="diagnostico" placeholder="Diagnóstico e achados clínicos..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label for="prescricao">Prescrição / Conduta</label>
+          <textarea id="prescricao" placeholder="Medicamentos, exames solicitados, orientações..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label for="obs_atendimento">Observações</label>
+          <textarea id="obs_atendimento" placeholder="Informações adicionais..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROCEDIMENTO -->
+    <div id="bloco-procedimento" style="display:none">
+      <div class="form-section-title">Dados do Procedimento</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tipo_proc">Tipo de Procedimento</label>
+          <select id="tipo_proc">
+            <option>Cirurgia Cardíaca</option>
+            <option>Implante de Pacemaker</option>
+            <option>Pericardiectomia</option>
+            <option>Correção de Shunt</option>
+            <option>Biopsia Cardíaca</option>
+            <option>Outro procedimento</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="data_proc">Data e Hora *</label>
+          <input type="datetime-local" id="data_proc">
+        </div>
+        <div class="form-group">
+          <label for="status_proc">Status</label>
+          <select id="status_proc">
+            <option value="agendado">Agendado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="valor_proc">Valor (R$)</label>
+          <input type="number" id="valor_proc" placeholder="0,00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label for="pagamento_proc">Pagamento</label>
+          <select id="pagamento_proc">
+            <option value="">—</option>
+            <option>PIX</option><option>Dinheiro</option>
+            <option>Cartão de Débito</option><option>Cartão de Crédito</option>
+            <option>Parcelado</option><option>Convênio</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="anestesia">Anestesia</label>
+          <input type="text" id="anestesia" placeholder="Ex: Geral inalatória">
+        </div>
+        <div class="form-group">
+          <label for="duracao_min">Duração (min)</label>
+          <input type="number" id="duracao_min" placeholder="Ex: 90" min="0">
+        </div>
+        <div class="form-group full">
+          <label for="intercorrencias">Intercorrências</label>
+          <textarea id="intercorrencias" placeholder="Intercorrências durante o procedimento..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label for="obs_proc">Observações / Pós-operatório</label>
+          <textarea id="obs_proc" placeholder="Cuidados pós-operatórios, medicação..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a href="home.html" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary" id="btn-salvar">Salvar</button>
+    </div>
+  </form>
 </main>
-
 <div id="toast"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script>
-(async () => {
-  if (!initSupabase()) {
-    document.querySelector('.subtitle').textContent = 'Configure o Supabase em js/config.js para começar.';
-    document.getElementById('proximas-container').innerHTML = '<div class="empty-state"><p>Supabase não configurado.</p></div>';
-    document.getElementById('recentes-container').innerHTML = '<div class="empty-state"><p>Supabase não configurado.</p></div>';
-    return;
-  }
+let tipoAtual = 'atendimento';
+let pacienteSelecionado = null;
+let tutorSelecionado = null;
 
+document.addEventListener('DOMContentLoaded', () => {
+  if (!initSupabase()) return;
+
+  // Data/hora atual
   const agora = new Date();
-  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
-  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+  const iso = agora.toISOString().slice(0,16);
+  document.getElementById('data_atendimento').value = iso;
+  document.getElementById('data_proc').value = iso;
 
-  const mesNome = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  document.getElementById('mes-ref').textContent = `Resumo de ${mesNome}`;
+  // Raças cascata
+  const selEsp = document.getElementById('especie');
+  const selRaca = document.getElementById('raca');
+  popularRacas(selEsp, selRaca);
+  selEsp.addEventListener('change', () => popularRacas(selEsp, selRaca));
 
-  // Carrega tudo em paralelo
-  const [{ data: doMes }, { data: agendadas }, { data: recentes }, { data: acumulado }] = await Promise.all([
-    dbClient.from('cirurgias').select('*').gte('data_cirurgia', inicioMes).lte('data_cirurgia', fimMes),
-    dbClient.from('cirurgias').select('*').eq('status', 'agendada').gte('data_cirurgia', agora.toISOString()).order('data_cirurgia', { ascending: true }).limit(8),
-    dbClient.from('cirurgias').select('*').eq('status', 'realizada').order('data_cirurgia', { ascending: false }).limit(6),
-    dbClient.from('cirurgias').select('id, valor, status'),
-  ]);
+  // Máscaras
+  document.getElementById('cpf_tutor').addEventListener('input', e => e.target.value = mascaraCPF(e.target.value));
+  document.getElementById('telefone_tutor').addEventListener('input', e => e.target.value = mascaraTelefone(e.target.value));
+  document.getElementById('cep_tutor').addEventListener('input', e => e.target.value = mascaraCEP(e.target.value));
+  document.getElementById('cep_tutor').addEventListener('blur', async e => {
+    const cep = e.target.value.replace(/\D/g,'');
+    if (cep.length === 8) await buscarCEP(cep, d => {
+      document.getElementById('logradouro_tutor').value = d.logradouro||'';
+      document.getElementById('bairro_tutor').value = d.bairro||'';
+      document.getElementById('cidade_tutor').value = d.localidade||'';
+      document.getElementById('numero_tutor').focus();
+    });
+  });
 
-  // KPIs do mês
-  const realizadasMes = (doMes || []).filter(c => c.status === 'realizada');
-  const receitaMes = realizadasMes.reduce((s, c) => s + (Number(c.valor) || 0), 0);
-  const ticket = realizadasMes.length ? receitaMes / realizadasMes.length : 0;
+  // Autocomplete paciente
+  setupAutocomplete('busca-paciente','lista-pacientes', buscarPacientes, selecionarPaciente,
+    p => `<strong>${p.nome}</strong><small>${p.especie||''} ${p.raca||''}</small>`);
 
-  document.getElementById('kpi-total').textContent = (doMes || []).length;
-  document.getElementById('kpi-realizadas').textContent = `${realizadasMes.length} realizadas`;
-  document.getElementById('kpi-receita').textContent = fmtMoeda(receitaMes);
-  document.getElementById('kpi-ticket').textContent = `ticket médio ${fmtMoeda(ticket)}`;
-  document.getElementById('kpi-agendadas').textContent = (agendadas || []).length;
+  // Autocomplete tutor
+  setupAutocomplete('busca-tutor','lista-tutores', buscarTutores, selecionarTutor,
+    t => `<strong>${t.nome}</strong><small>${fmtTelefone(t.telefone)}</small>`);
 
-  const totalAcum = (acumulado || []).length;
-  const receitaAcum = (acumulado || []).filter(c => c.status === 'realizada').reduce((s, c) => s + (Number(c.valor) || 0), 0);
-  document.getElementById('kpi-acumulado').textContent = totalAcum;
+  // Submit
+  document.getElementById('form-principal').addEventListener('submit', salvar);
+});
 
-  // Próximas
-  const proxCont = document.getElementById('proximas-container');
-  if (!agendadas || agendadas.length === 0) {
-    proxCont.innerHTML = '<div class="empty-state"><p>Nenhuma cirurgia agendada.</p></div>';
-  } else {
-    proxCont.innerHTML = renderTabela(agendadas, ['data', 'pet', 'raca', 'especie', 'proprietario', 'contato', 'tipo', 'valor', 'status'], true);
-  }
+function setTipo(tipo, el) {
+  tipoAtual = tipo;
+  document.querySelectorAll('.tipo-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bloco-atendimento').style.display = tipo === 'atendimento' ? '' : 'none';
+  document.getElementById('bloco-procedimento').style.display = tipo === 'procedimento' ? '' : 'none';
+}
 
-  // Recentes
-  const recCont = document.getElementById('recentes-container');
-  if (!recentes || recentes.length === 0) {
-    recCont.innerHTML = '<div class="empty-state"><p>Nenhuma cirurgia realizada ainda.</p></div>';
-  } else {
-    recCont.innerHTML = renderTabela(recentes, ['data', 'pet', 'raca', 'especie', 'proprietario', 'valor', 'pagamento', 'status']);
-  }
-})();
-
-function renderTabela(rows, cols, compacta = false) {
-  const labels = {
-    data: 'Data', pet: 'Pet', raca: 'Raça', especie: 'Espécie',
-    proprietario: 'Proprietário', contato: 'Contato', tipo: 'Tipo',
-    valor: 'Valor', pagamento: 'Pagamento', status: 'Status'
-  };
-  const headers = cols.map(c => `<th>${labels[c] || c}</th>`).join('');
-  const rows_html = rows.map(r => {
-    const cells = cols.map(c => {
-      switch(c) {
-        case 'data': return `<td>${fmtData(r.data_cirurgia)}</td>`;
-        case 'pet': return `<td><strong>${r.nome_pet || '—'}</strong></td>`;
-        case 'raca': return `<td>${r.raca || '—'}</td>`;
-        case 'especie': return `<td>${r.especie || '—'}</td>`;
-        case 'proprietario': return `<td>${r.nome_proprietario || '—'}</td>`;
-        case 'contato': return `<td>${r.contato || '—'}</td>`;
-        case 'tipo': return `<td>${r.tipo_cirurgia || '—'}</td>`;
-        case 'valor': return `<td>${fmtMoeda(r.valor)}</td>`;
-        case 'pagamento': return `<td>${r.forma_pagamento || '—'}</td>`;
-        case 'status': return `<td><span class="badge badge-${r.status}">${r.status}</span></td>`;
-        default: return '<td>—</td>';
+function setupAutocomplete(inputId, listId, searchFn, selectFn, renderFn) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  let t;
+  input.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const results = await searchFn(input.value);
+      if (!results.length) {
+        list.style.display = 'none';
+        // Mostrar bloco de cadastro novo
+        if (inputId === 'busca-paciente') document.getElementById('bloco-paciente-novo').style.display = input.value.length > 1 ? '' : 'none';
+        if (inputId === 'busca-tutor') document.getElementById('bloco-tutor-novo').style.display = input.value.length > 1 ? '' : 'none';
+        return;
       }
-    }).join('');
-    return `<tr onclick="location.href='registro.html?id=${r.id}'" style="cursor:pointer">${cells}</tr>`;
-  }).join('');
-  return `<div class="table-wrap"><table><thead><tr>${headers}</tr></thead><tbody>${rows_html}</tbody></table></div>`;
+      list.innerHTML = results.map(r => `<div class="autocomplete-item" data-id="${r.id}">${renderFn(r)}</div>`).join('');
+      list.style.display = '';
+      list.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+        el.addEventListener('click', () => { selectFn(results[i]); list.style.display = 'none'; });
+      });
+    }, 250);
+  });
+  document.addEventListener('click', e => { if (!list.contains(e.target) && e.target !== input) list.style.display = 'none'; });
+}
+
+function selecionarPaciente(p) {
+  pacienteSelecionado = p;
+  document.getElementById('busca-paciente').value = '';
+  document.getElementById('bloco-paciente-novo').style.display = 'none';
+  document.getElementById('info-paciente-selecionado').style.display = '';
+  document.getElementById('info-pet-nome').textContent = p.nome;
+  document.getElementById('info-pet-detalhe').textContent = `${p.especie||''} ${p.raca||''}`.trim();
+  if (p.tutor_id && p.tutores) selecionarTutor({ id: p.tutor_id, nome: p.tutores.nome });
+}
+
+function selecionarTutor(t) {
+  tutorSelecionado = t;
+  document.getElementById('busca-tutor').value = '';
+  document.getElementById('bloco-tutor-novo').style.display = 'none';
+  document.getElementById('info-tutor-selecionado').style.display = '';
+  document.getElementById('info-tutor-nome').textContent = t.nome;
+  document.getElementById('info-tutor-tel').textContent = fmtTelefone(t.telefone);
+}
+
+function limparPaciente() {
+  pacienteSelecionado = null;
+  document.getElementById('info-paciente-selecionado').style.display = 'none';
+  document.getElementById('busca-paciente').value = '';
+}
+
+function limparTutor() {
+  tutorSelecionado = null;
+  document.getElementById('info-tutor-selecionado').style.display = 'none';
+  document.getElementById('busca-tutor').value = '';
+}
+
+async function salvar(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  try {
+    // 1. Salvar tutor novo se necessário
+    let tutorId = tutorSelecionado?.id || null;
+    const nomeTutor = document.getElementById('nome_tutor').value.trim();
+    if (!tutorId && nomeTutor) {
+      const { data, error } = await dbClient.from('tutores').insert({
+        nome: nomeTutor,
+        cpf: document.getElementById('cpf_tutor').value.replace(/\D/g,'') || null,
+        telefone: document.getElementById('telefone_tutor').value.replace(/\D/g,'') || null,
+        cep: document.getElementById('cep_tutor').value.replace(/\D/g,'') || null,
+        logradouro: document.getElementById('logradouro_tutor').value || null,
+        numero: document.getElementById('numero_tutor').value || null,
+        bairro: document.getElementById('bairro_tutor').value || null,
+        cidade: document.getElementById('cidade_tutor').value || null,
+      }).select().single();
+      if (error) throw error;
+      tutorId = data.id;
+    }
+
+    // 2. Salvar paciente novo se necessário
+    let pacienteId = pacienteSelecionado?.id || null;
+    const nomePet = document.getElementById('nome_pet').value.trim();
+    if (!pacienteId && nomePet) {
+      const { data, error } = await dbClient.from('pacientes').insert({
+        nome: nomePet,
+        especie: document.getElementById('especie').value,
+        raca: document.getElementById('raca').value || null,
+        sexo: document.getElementById('sexo').value || null,
+        data_nascimento: document.getElementById('data_nascimento').value || null,
+        peso: document.getElementById('peso').value ? Number(document.getElementById('peso').value) : null,
+        tutor_id: tutorId,
+      }).select().single();
+      if (error) throw error;
+      pacienteId = data.id;
+    }
+
+    // 3. Salvar atendimento ou procedimento
+    if (tipoAtual === 'atendimento') {
+      const { error } = await dbClient.from('atendimentos').insert({
+        paciente_id: pacienteId,
+        tutor_id: tutorId,
+        tipo: document.getElementById('tipo_atendimento').value,
+        data_atendimento: document.getElementById('data_atendimento').value,
+        status: document.getElementById('status_atendimento').value,
+        valor: document.getElementById('valor_atendimento').value ? Number(document.getElementById('valor_atendimento').value) : null,
+        forma_pagamento: document.getElementById('pagamento_atendimento').value || null,
+        retorno_em: document.getElementById('retorno_em').value || null,
+        queixa_principal: document.getElementById('queixa_principal').value || null,
+        diagnostico: document.getElementById('diagnostico').value || null,
+        prescricao: document.getElementById('prescricao').value || null,
+        observacoes: document.getElementById('obs_atendimento').value || null,
+      });
+      if (error) throw error;
+    } else {
+      const { error } = await dbClient.from('procedimentos').insert({
+        paciente_id: pacienteId,
+        tutor_id: tutorId,
+        tipo: document.getElementById('tipo_proc').value,
+        data_procedimento: document.getElementById('data_proc').value,
+        status: document.getElementById('status_proc').value,
+        valor: document.getElementById('valor_proc').value ? Number(document.getElementById('valor_proc').value) : null,
+        forma_pagamento: document.getElementById('pagamento_proc').value || null,
+        anestesia: document.getElementById('anestesia').value || null,
+        duracao_min: document.getElementById('duracao_min').value ? Number(document.getElementById('duracao_min').value) : null,
+        intercorrencias: document.getElementById('intercorrencias').value || null,
+        observacoes: document.getElementById('obs_proc').value || null,
+      });
+      if (error) throw error;
+    }
+
+    toast('Salvo com sucesso!');
+    setTimeout(() => location.href = 'home.html', 1200);
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
 }
 </script>
 </body>

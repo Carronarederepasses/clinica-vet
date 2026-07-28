@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goldefeder — Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="home.html">Goldefeder <span>Cardiologia Vet</span></a>
+  <div class="nav-links">
+    <a href="home.html">Dashboard</a>
+    <a href="index.html">+ Atendimento</a>
+    <a href="pacientes.html">Pacientes</a>
+    <a href="atendimentos.html">Consultas</a>
+    <a href="procedimentos.html">Procedimentos</a>
+    <a href="tutores.html">Tutores</a>
+    <a href="busca.html">Busca</a>
+  </div>
+</nav>
+<main>
+  <h1>Dashboard</h1>
+  <p class="subtitle" id="mes-ref">Carregando...</p>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <div class="kpi-card">
+      <div class="kpi-label">Atendimentos hoje</div>
+      <div class="kpi-value" id="kpi-hoje">—</div>
+      <div class="kpi-sub" id="kpi-hoje-sub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Receita no mês</div>
+      <div class="kpi-value" id="kpi-receita">—</div>
+      <div class="kpi-sub" id="kpi-ticket">ticket médio —</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Procedimentos mês</div>
+      <div class="kpi-value" id="kpi-proc">—</div>
+      <div class="kpi-sub" id="kpi-proc-sub">— realizados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Pacientes ativos</div>
+      <div class="kpi-value" id="kpi-pacientes">—</div>
+      <div class="kpi-sub" id="kpi-tutores">— tutores</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Agendados hoje</div>
+      <div class="kpi-value" id="kpi-agendados">—</div>
+      <div class="kpi-sub">consultas + procedimentos</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Agenda de Hoje</span>
+      <a href="index.html" class="btn btn-primary btn-sm">+ Novo atendimento</a>
+    </div>
+    <div id="agenda-container"><div class="empty-state"><p>Carregando...</p></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Próximos Agendamentos</span>
+      <a href="atendimentos.html" class="btn btn-outline btn-sm">Ver todos</a>
+    </div>
+    <div id="proximos-container"><div class="empty-state"><p>Carregando...</p></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Últimos Atendimentos</span>
+      <a href="atendimentos.html" class="btn btn-outline btn-sm">Ver histórico</a>
+    </div>
+    <div id="ultimos-container"><div class="empty-state"><p>Carregando...</p></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Receita — últimos 6 meses</span>
+    </div>
+    <div id="grafico-container" style="padding:1rem 0">
+      <div id="grafico-barras" style="display:flex;align-items:flex-end;gap:.75rem;height:120px;"></div>
+      <div id="grafico-labels" style="display:flex;gap:.75rem;margin-top:.5rem;"></div>
+    </div>
+  </div>
+</main>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+(async () => {
+  if (!initSupabase()) return;
+
+  const agora = new Date();
+  const hoje = agora.toISOString().slice(0,10);
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+  const fimMes = new Date(agora.getFullYear(), agora.getMonth()+1, 0, 23,59,59).toISOString();
+  const inicioHoje = hoje + 'T00:00:00';
+  const fimHoje = hoje + 'T23:59:59';
+
+  document.getElementById('mes-ref').textContent =
+    'Resumo de ' + agora.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  const [
+    {data: atHoje}, {data: atMes}, {data: procMes},
+    {data: pacAtivos}, {data: tutTotal},
+    {data: proxAt}, {data: proxProc},
+    {data: ultAt}
+  ] = await Promise.all([
+    dbClient.from('atendimentos').select('id,status,valor').gte('data_atendimento',inicioHoje).lte('data_atendimento',fimHoje),
+    dbClient.from('atendimentos').select('id,status,valor').gte('data_atendimento',inicioMes).lte('data_atendimento',fimMes),
+    dbClient.from('procedimentos').select('id,status,valor').gte('data_procedimento',inicioMes).lte('data_procedimento',fimMes),
+    dbClient.from('pacientes').select('id').eq('status','ativo'),
+    dbClient.from('tutores').select('id').eq('ativo',true),
+    dbClient.from('atendimentos').select('id,tipo,data_atendimento,status,pacientes(nome,especie),tutores(nome,telefone)')
+      .gte('data_atendimento', agora.toISOString()).eq('status','agendado')
+      .order('data_atendimento',{ascending:true}).limit(8),
+    dbClient.from('procedimentos').select('id,tipo,data_procedimento,status,pacientes(nome,especie),tutores(nome,telefone)')
+      .gte('data_procedimento', agora.toISOString()).eq('status','agendado')
+      .order('data_procedimento',{ascending:true}).limit(4),
+    dbClient.from('atendimentos').select('id,tipo,data_atendimento,status,valor,pacientes(nome,especie),tutores(nome)')
+      .eq('status','realizado').order('data_atendimento',{ascending:false}).limit(6),
+  ]);
+
+  // KPIs
+  const agendadosHoje = (atHoje||[]).filter(a=>a.status==='agendado').length;
+  const realizadosHoje = (atHoje||[]).filter(a=>a.status==='realizado').length;
+  document.getElementById('kpi-hoje').textContent = (atHoje||[]).length;
+  document.getElementById('kpi-hoje-sub').textContent = `${realizadosHoje} realizado(s)`;
+
+  const realizadosMes = (atMes||[]).filter(a=>a.status==='realizado');
+  const recAt = realizadosMes.reduce((s,a)=>s+(Number(a.valor)||0),0);
+  const realizadosProcMes = (procMes||[]).filter(p=>p.status==='realizado');
+  const recProc = realizadosProcMes.reduce((s,p)=>s+(Number(p.valor)||0),0);
+  const recTotal = recAt + recProc;
+  const totalReal = realizadosMes.length + realizadosProcMes.length;
+  document.getElementById('kpi-receita').textContent = fmtMoeda(recTotal);
+  document.getElementById('kpi-ticket').textContent = `ticket médio ${fmtMoeda(totalReal?recTotal/totalReal:0)}`;
+  document.getElementById('kpi-proc').textContent = (procMes||[]).length;
+  document.getElementById('kpi-proc-sub').textContent = `${realizadosProcMes.length} realizado(s)`;
+  document.getElementById('kpi-pacientes').textContent = (pacAtivos||[]).length;
+  document.getElementById('kpi-tutores').textContent = `${(tutTotal||[]).length} tutores`;
+  document.getElementById('kpi-agendados').textContent = agendadosHoje + (proxProc||[]).filter(p=>p.data_procedimento.startsWith(hoje)).length;
+
+  // Agenda hoje
+  const agendaHoje = (atHoje||[]).sort((a,b)=>a.data_atendimento>b.data_atendimento?1:-1);
+  // Busca com join
+  const {data: agendaFull} = await dbClient.from('atendimentos')
+    .select('id,tipo,data_atendimento,status,pacientes(nome,especie),tutores(nome,telefone)')
+    .gte('data_atendimento',inicioHoje).lte('data_atendimento',fimHoje)
+    .order('data_atendimento',{ascending:true});
+
+  renderLista('agenda-container', agendaFull||[], 'atendimento', 'Nenhum atendimento hoje.');
+  renderLista('proximos-container', proxAt||[], 'atendimento', 'Nenhum agendamento futuro.');
+  renderListaUltimos('ultimos-container', ultAt||[]);
+  await renderGrafico();
+})();
+
+function renderLista(containerId, rows, tipo, vazio) {
+  const c = document.getElementById(containerId);
+  if (!rows.length) { c.innerHTML = `<div class="empty-state"><p>${vazio}</p></div>`; return; }
+  const trs = rows.map(r => {
+    const pet = r.pacientes ? esc(r.pacientes.nome) : '—';
+    const esp = r.pacientes ? esc(r.pacientes.especie||'') : '';
+    const tutor = r.tutores ? esc(r.tutores.nome) : '—';
+    const tel = r.tutores ? fmtTelefone(r.tutores.telefone) : '—';
+    const data = r.data_atendimento || r.data_procedimento;
+    return `<tr onclick="location.href='atendimentos.html?id=${r.id}'" style="cursor:pointer">
+      <td>${fmtDataHora(data)}</td>
+      <td><strong>${pet}</strong> <small style="color:#888">${esp}</small></td>
+      <td>${tutor}</td><td>${tel}</td>
+      <td>${esc(r.tipo||'—')}</td>
+      <td>${badgeStatus(r.status)}</td>
+    </tr>`;
+  }).join('');
+  c.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Data/Hora</th><th>Paciente</th><th>Tutor</th><th>Telefone</th><th>Tipo</th><th>Status</th></tr></thead>
+    <tbody>${trs}</tbody></table></div>`;
+}
+
+function renderListaUltimos(containerId, rows) {
+  const c = document.getElementById(containerId);
+  if (!rows.length) { c.innerHTML = '<div class="empty-state"><p>Nenhum atendimento realizado ainda.</p></div>'; return; }
+  const trs = rows.map(r => {
+    const pet = r.pacientes ? esc(r.pacientes.nome) : '—';
+    const tutor = r.tutores ? esc(r.tutores.nome) : '—';
+    return `<tr onclick="location.href='atendimentos.html?id=${r.id}'" style="cursor:pointer">
+      <td>${fmtData(r.data_atendimento)}</td>
+      <td><strong>${pet}</strong></td>
+      <td>${tutor}</td>
+      <td>${esc(r.tipo||'—')}</td>
+      <td>${fmtMoeda(r.valor)}</td>
+      <td>${badgeStatus(r.status)}</td>
+    </tr>`;
+  }).join('');
+  c.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Data</th><th>Paciente</th><th>Tutor</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
+    <tbody>${trs}</tbody></table></div>`;
+}
+
+async function renderGrafico() {
+  const meses = [];
+  const agora = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+    meses.push({ label: d.toLocaleDateString('pt-BR',{month:'short'}), ano: d.getFullYear(), mes: d.getMonth() });
+  }
+  const receitas = await Promise.all(meses.map(async m => {
+    const ini = new Date(m.ano, m.mes, 1).toISOString();
+    const fim = new Date(m.ano, m.mes+1, 0, 23,59,59).toISOString();
+    const [{data:a},{data:p}] = await Promise.all([
+      dbClient.from('atendimentos').select('valor').eq('status','realizado').gte('data_atendimento',ini).lte('data_atendimento',fim),
+      dbClient.from('procedimentos').select('valor').eq('status','realizado').gte('data_procedimento',ini).lte('data_procedimento',fim),
+    ]);
+    return [...(a||[]),...(p||[])].reduce((s,r)=>s+(Number(r.valor)||0),0);
+  }));
+  const max = Math.max(...receitas, 1);
+  const barras = document.getElementById('grafico-barras');
+  const labels = document.getElementById('grafico-labels');
+  barras.innerHTML = receitas.map((v,i)=>{
+    const h = Math.round((v/max)*100);
+    return `<div title="${fmtMoeda(v)}" style="flex:1;background:var(--black);height:${h}%;border-radius:3px 3px 0 0;min-height:2px"></div>`;
+  }).join('');
+  labels.innerHTML = meses.map(m=>`<div style="flex:1;text-align:center;font-size:.7rem;color:#888">${m.label}</div>`).join('');
+}
+</script>
+</body>
+</html>
