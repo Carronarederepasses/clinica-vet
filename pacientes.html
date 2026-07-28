@@ -81,8 +81,10 @@
         </div>
         <div class="form-group">
           <label for="m-raca">Raça</label>
-          <input type="text" id="m-raca" list="m-raca-list" placeholder="Digite ou selecione..." autocomplete="off">
-          <datalist id="m-raca-list"></datalist>
+          <div class="autocomplete-wrap">
+            <input type="text" id="m-raca" placeholder="Selecione a espécie primeiro..." autocomplete="off">
+            <div class="autocomplete-list" id="m-raca-dropdown" style="display:none"></div>
+          </div>
         </div>
         <div class="form-group">
           <label for="m-sexo">Sexo</label>
@@ -147,9 +149,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Raças cascata no modal
   const mEsp = document.getElementById('m-especie');
-  const mRaca = document.getElementById('m-raca');
-  popularRacas(mEsp, mRaca);
-  mEsp.addEventListener('change', () => popularRacas(mEsp, mRaca));
+  popularRacas(mEsp, document.getElementById('m-raca'));
+  setupRacaCombobox(mEsp, 'm-raca', 'm-raca-dropdown');
 
   // Autocomplete tutor no modal
   const inp = document.getElementById('m-tutor-busca');
@@ -239,6 +240,7 @@ async function abrirModal(id = null) {
       document.getElementById('m-nome').value=p.nome||'';
       mEsp.value=p.especie||'Cachorro';
       popularRacas(mEsp, document.getElementById('m-raca'), p.raca||'');
+      document.getElementById('m-raca').value=p.raca||'';
       document.getElementById('m-sexo').value=p.sexo||'';
       document.getElementById('m-nasc').value=p.data_nascimento||'';
       document.getElementById('m-peso').value=p.peso||'';

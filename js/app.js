@@ -50,9 +50,8 @@ function popularRacas(selectEspecie, racaEl, valorAtual = '') {
   const especie = selectEspecie.value;
   const racas = RACAS[especie] || ['Outro'];
   if (racaEl.tagName === 'INPUT') {
-    const dl = document.getElementById(racaEl.getAttribute('list'));
-    if (dl) dl.innerHTML = racas.map(r => `<option value="${r}">`).join('');
     racaEl.value = valorAtual || '';
+    racaEl._racas = racas;
   } else {
     racaEl.innerHTML = '<option value="">Selecione a raça...</option>';
     racas.forEach(r => {
@@ -62,6 +61,37 @@ function popularRacas(selectEspecie, racaEl, valorAtual = '') {
       racaEl.appendChild(opt);
     });
   }
+}
+
+function setupRacaCombobox(especieEl, inputId, dropdownId) {
+  const input = document.getElementById(inputId);
+  const drop = document.getElementById(dropdownId);
+  if (!input || !drop) return;
+
+  function renderDrop(filtro = '') {
+    const racas = (input._racas || RACAS[especieEl.value] || ['Outro']);
+    const fl = filtro.toLowerCase();
+    const lista = fl ? racas.filter(r => r.toLowerCase().includes(fl)) : racas;
+    if (!lista.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = lista.map(r => `<div class="autocomplete-item">${esc(r)}</div>`).join('');
+    drop.style.display = '';
+    drop.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = lista[i];
+        drop.style.display = 'none';
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => renderDrop(input.value));
+  input.addEventListener('input', () => renderDrop(input.value));
+  input.addEventListener('blur', () => setTimeout(() => drop.style.display = 'none', 150));
+  especieEl.addEventListener('change', () => {
+    input.value = '';
+    input._racas = RACAS[especieEl.value] || ['Outro'];
+    drop.style.display = 'none';
+  });
 }
 
 // ── Toast ─────────────────────────────────────────────────

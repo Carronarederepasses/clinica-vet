@@ -81,8 +81,10 @@
         </div>
         <div class="form-group">
           <label for="raca">Raça</label>
-          <input type="text" id="raca" list="raca-list" placeholder="Digite ou selecione..." autocomplete="off">
-          <datalist id="raca-list"></datalist>
+          <div class="autocomplete-wrap">
+            <input type="text" id="raca" placeholder="Selecione a espécie primeiro..." autocomplete="off">
+            <div class="autocomplete-list" id="raca-dropdown" style="display:none"></div>
+          </div>
         </div>
         <div class="form-group">
           <label for="sexo">Sexo</label>
@@ -302,9 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Raças cascata
   const selEsp = document.getElementById('especie');
-  const selRaca = document.getElementById('raca');
-  popularRacas(selEsp, selRaca);
-  selEsp.addEventListener('change', () => popularRacas(selEsp, selRaca));
+  popularRacas(selEsp, document.getElementById('raca'));
+  setupRacaCombobox(selEsp, 'raca', 'raca-dropdown');
 
   // Máscaras
   document.getElementById('cpf_tutor').addEventListener('input', e => e.target.value = mascaraCPF(e.target.value));
