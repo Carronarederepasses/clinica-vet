@@ -1,5 +1,5 @@
 -- ============================================================
--- Goldefeder Cardiologia Veterinária — Schema completo
+-- Goldfeder Cardiologia Veterinária — Schema completo
 -- Execute no SQL Editor do Supabase
 -- ============================================================
 
