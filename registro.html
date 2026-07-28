@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function carregarRegistro(id) {
-  const { data, error } = await supabase.from('cirurgias').select('*').eq('id', id).single();
+  const { data, error } = await dbClient.from('cirurgias').select('*').eq('id', id).single();
   if (error || !data) { toast('Registro não encontrado.', 'error'); return; }
   registroAtual = data;
 
@@ -317,9 +317,9 @@ async function salvar(e) {
 
   let error;
   if (editId) {
-    ({ error } = await supabase.from('cirurgias').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId));
+    ({ error } = await dbClient.from('cirurgias').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId));
   } else {
-    ({ error } = await supabase.from('cirurgias').insert(payload));
+    ({ error } = await dbClient.from('cirurgias').insert(payload));
   }
 
   if (error) {
@@ -335,7 +335,7 @@ async function salvar(e) {
 
 async function excluir() {
   document.getElementById('modal-excluir').classList.remove('open');
-  const { error } = await supabase.from('cirurgias').delete().eq('id', editId);
+  const { error } = await dbClient.from('cirurgias').delete().eq('id', editId);
   if (error) { toast('Erro ao excluir.', 'error'); return; }
   toast('Registro excluído.');
   setTimeout(() => location.href = 'historico.html', 1200);

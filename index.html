@@ -88,10 +88,10 @@
 
   // Carrega tudo em paralelo
   const [{ data: doMes }, { data: agendadas }, { data: recentes }, { data: acumulado }] = await Promise.all([
-    supabase.from('cirurgias').select('*').gte('data_cirurgia', inicioMes).lte('data_cirurgia', fimMes),
-    supabase.from('cirurgias').select('*').eq('status', 'agendada').gte('data_cirurgia', agora.toISOString()).order('data_cirurgia', { ascending: true }).limit(8),
-    supabase.from('cirurgias').select('*').eq('status', 'realizada').order('data_cirurgia', { ascending: false }).limit(6),
-    supabase.from('cirurgias').select('id, valor, status'),
+    dbClient.from('cirurgias').select('*').gte('data_cirurgia', inicioMes).lte('data_cirurgia', fimMes),
+    dbClient.from('cirurgias').select('*').eq('status', 'agendada').gte('data_cirurgia', agora.toISOString()).order('data_cirurgia', { ascending: true }).limit(8),
+    dbClient.from('cirurgias').select('*').eq('status', 'realizada').order('data_cirurgia', { ascending: false }).limit(6),
+    dbClient.from('cirurgias').select('id, valor, status'),
   ]);
 
   // KPIs do mês

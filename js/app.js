@@ -1,11 +1,11 @@
 // Supabase client — carregado após config.js
-let supabase;
+let dbClient;
 function initSupabase() {
   if (typeof SUPABASE_URL === 'undefined' || SUPABASE_URL.includes('SEU-PROJETO')) {
     console.warn('Configure SUPABASE_URL e SUPABASE_ANON_KEY em js/config.js');
     return false;
   }
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   return true;
 }
 

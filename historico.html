@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function carregar() {
-  const { data, error } = await supabase
+  const { data, error } = await dbClient
     .from('cirurgias')
     .select('*')
     .order('data_cirurgia', { ascending: false });
