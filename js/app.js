@@ -12,15 +12,27 @@ function initSupabase() {
 // ── Raças em cascata ──────────────────────────────────────
 const RACAS = {
   'Cachorro': [
-    'Akita','Australian Shepherd','Basenji','Basset Hound','Beagle','Bichon Frisé',
-    'Border Collie','Boxer','Borzói','Bulldog Francês','Bulldog Inglês','Bull Terrier',
-    'Cavalier King Charles Spaniel','Chihuahua','Chow-Chow','Cocker Spaniel Americano',
-    'Cocker Spaniel Inglês','Dachshund','Dálmata','Dobermann','Fila Brasileiro',
-    'Golden Retriever','Great Dane','Husky Siberiano','Jack Russell Terrier',
-    'Labrador Retriever','Lhasa Apso','Maltês','Pastor Alemão','Pastor Belga Malinois',
-    'Pinscher Miniatura','Pit Bull Terrier','Poodle','Pug','Rottweiler','Schnauzer',
-    'Shar-Pei','Shiba Inu','Shih Tzu','São Bernardo','Vizsla','Weimaraner',
-    'West Highland White Terrier','Yorkshire Terrier','Sem Raça Definida (SRD)'
+    'Afghan Hound','Akita','Alaskan Malamute','Australian Shepherd',
+    'Basenji','Basset Hound','Beagle','Bernês da Montanha','Bichon Frisé',
+    'Boiadeiro Australiano','Border Collie','Border Terrier','Boxer','Borzói',
+    'Braco Alemão','Bulldog Francês','Bulldog Inglês','Bull Terrier',
+    'Cane Corso','Cavalier King Charles Spaniel','Chihuahua','Chow-Chow',
+    'Cocker Spaniel Americano','Cocker Spaniel Inglês',
+    'Dachshund','Dálmata','Dobermann',
+    'Fila Brasileiro','Fox Paulistinha',
+    'Galgo','Golden Retriever','Great Dane',
+    'Husky Siberiano',
+    'Jack Russell Terrier',
+    'Labrador Retriever','Lhasa Apso','Lulu da Pomerânia',
+    'Maltês',
+    'Pastor Alemão','Pastor Belga Malinois','Pastor de Shetland',
+    'Pinscher Miniatura','Pit Bull Terrier','Pointer','Poodle','Pug',
+    'Rottweiler',
+    'Samoieda','Schnauzer','Setter Inglês','Setter Irlandês',
+    'Shar-Pei','Shiba Inu','Shih Tzu','Spitz Alemão','São Bernardo',
+    'Terrier Brasileiro','Vizsla',
+    'Weimaraner','West Highland White Terrier',
+    'Yorkshire Terrier','Sem Raça Definida (SRD)'
   ],
   'Gato': [
     'Abissínio','Angorá Turco','Bengal','Birmanês','British Shorthair','Burmês',
@@ -34,22 +46,21 @@ const RACAS = {
   'Outro': ['Outro'],
 };
 
-function popularRacas(selectEspecie, selectRaca, valorAtual = '') {
+function popularRacas(selectEspecie, racaEl, valorAtual = '') {
   const especie = selectEspecie.value;
-  const racas = RACAS[especie] || [];
-  selectRaca.innerHTML = '<option value="">Selecione a raça...</option>';
-  racas.forEach(r => {
-    const opt = document.createElement('option');
-    opt.value = r;
-    opt.textContent = r;
-    if (r === valorAtual) opt.selected = true;
-    selectRaca.appendChild(opt);
-  });
-  if (!racas.length) {
-    const opt = document.createElement('option');
-    opt.value = 'Outro';
-    opt.textContent = 'Outro';
-    selectRaca.appendChild(opt);
+  const racas = RACAS[especie] || ['Outro'];
+  if (racaEl.tagName === 'INPUT') {
+    const dl = document.getElementById(racaEl.getAttribute('list'));
+    if (dl) dl.innerHTML = racas.map(r => `<option value="${r}">`).join('');
+    racaEl.value = valorAtual || '';
+  } else {
+    racaEl.innerHTML = '<option value="">Selecione a raça...</option>';
+    racas.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r; opt.textContent = r;
+      if (r === valorAtual) opt.selected = true;
+      racaEl.appendChild(opt);
+    });
   }
 }
 

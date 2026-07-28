@@ -81,7 +81,8 @@
         </div>
         <div class="form-group">
           <label for="raca">Raça</label>
-          <select id="raca"><option value="">Selecione a espécie primeiro</option></select>
+          <input type="text" id="raca" list="raca-list" placeholder="Digite ou selecione..." autocomplete="off">
+          <datalist id="raca-list"></datalist>
         </div>
         <div class="form-group">
           <label for="sexo">Sexo</label>
@@ -298,13 +299,6 @@ let tutorSelecionado = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!initSupabase()) return;
-
-  // Data/hora atual
-  const agora = new Date();
-  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-  const iso = agora.toISOString().slice(0,16);
-  document.getElementById('data_atendimento').value = iso;
-  document.getElementById('data_proc').value = iso;
 
   // Raças cascata
   const selEsp = document.getElementById('especie');
