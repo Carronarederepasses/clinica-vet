@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clínica Vet — Registro de Cirurgia</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">Clínica Vet <span>Cirurgias</span></a>
+  <div class="nav-links">
+    <a href="index.html">Dashboard</a>
+    <a href="registro.html" class="active">+ Registro</a>
+    <a href="historico.html">Histórico</a>
+  </div>
+</nav>
+
+<main>
+  <h1 id="page-title">Nova Cirurgia</h1>
+  <p class="subtitle" id="page-sub">Preencha os dados abaixo para registrar a cirurgia.</p>
+
+  <form class="form-card" id="form-cirurgia" novalidate>
+
+    <!-- PET -->
+    <div class="form-section-title">Dados do Pet</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="nome_pet">Nome do Pet *</label>
+        <input type="text" id="nome_pet" name="nome_pet" placeholder="Ex: Thor" required>
+        <span class="field-error" id="err-nome_pet">Campo obrigatório</span>
+      </div>
+      <div class="form-group">
+        <label for="especie">Espécie</label>
+        <select id="especie" name="especie">
+          <option value="Cachorro">Cachorro</option>
+          <option value="Gato">Gato</option>
+          <option value="Ave">Ave</option>
+          <option value="Coelho">Coelho</option>
+          <option value="Réptil">Réptil</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="raca">Raça</label>
+        <input type="text" id="raca" name="raca" placeholder="Ex: Golden Retriever">
+      </div>
+    </div>
+
+    <!-- CIRURGIA -->
+    <div class="form-section-title">Dados da Cirurgia</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="tipo_cirurgia">Tipo de Cirurgia</label>
+        <select id="tipo_cirurgia" name="tipo_cirurgia">
+          <option value="">Selecione...</option>
+          <option>Castração</option>
+          <option>Ortopédica</option>
+          <option>Oftalmológica</option>
+          <option>Dentária</option>
+          <option>Oncológica</option>
+          <option>Cardíaca</option>
+          <option>Emergência</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="data_cirurgia">Data e Hora *</label>
+        <input type="datetime-local" id="data_cirurgia" name="data_cirurgia" required>
+        <span class="field-error" id="err-data_cirurgia">Campo obrigatório</span>
+      </div>
+      <div class="form-group">
+        <label for="status">Status *</label>
+        <select id="status" name="status" required>
+          <option value="agendada">Agendada</option>
+          <option value="realizada">Realizada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FINANCEIRO -->
+    <div class="form-section-title">Financeiro</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="valor">Valor (R$)</label>
+        <input type="number" id="valor" name="valor" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label for="forma_pagamento">Forma de Pagamento</label>
+        <select id="forma_pagamento" name="forma_pagamento">
+          <option value="">Selecione...</option>
+          <option>PIX</option>
+          <option>Dinheiro</option>
+          <option>Cartão de Débito</option>
+          <option>Cartão de Crédito</option>
+          <option>Parcelado</option>
+          <option>Convênio</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- PROPRIETÁRIO -->
+    <div class="form-section-title">Dados do Proprietário</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="nome_proprietario">Nome *</label>
+        <input type="text" id="nome_proprietario" name="nome_proprietario" placeholder="Nome completo" required>
+        <span class="field-error" id="err-nome_proprietario">Campo obrigatório</span>
+      </div>
+      <div class="form-group">
+        <label for="cpf">CPF</label>
+        <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+        <span class="field-error" id="err-cpf">CPF inválido</span>
+      </div>
+      <div class="form-group">
+        <label for="contato">Telefone / WhatsApp</label>
+        <input type="tel" id="contato" name="contato" placeholder="(48) 99999-9999" maxlength="15" inputmode="numeric">
+      </div>
+    </div>
+
+    <!-- ENDEREÇO -->
+    <div class="form-section-title">Endereço</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="cep">CEP</label>
+        <input type="text" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric">
+        <span class="field-hint">Preencha para buscar endereço automaticamente</span>
+      </div>
+      <div class="form-group">
+        <label for="logradouro">Logradouro</label>
+        <input type="text" id="logradouro" name="logradouro" placeholder="Rua, Avenida...">
+      </div>
+      <div class="form-group">
+        <label for="numero">Número</label>
+        <input type="text" id="numero" name="numero" placeholder="Ex: 123">
+      </div>
+      <div class="form-group">
+        <label for="complemento">Complemento</label>
+        <input type="text" id="complemento" name="complemento" placeholder="Apto, bloco...">
+      </div>
+      <div class="form-group">
+        <label for="bairro">Bairro</label>
+        <input type="text" id="bairro" name="bairro" placeholder="Bairro">
+      </div>
+      <div class="form-group">
+        <label for="cidade">Cidade</label>
+        <input type="text" id="cidade" name="cidade" placeholder="Cidade">
+      </div>
+      <div class="form-group">
+        <label for="estado">Estado</label>
+        <input type="text" id="estado" name="estado" placeholder="SC" maxlength="2" style="text-transform:uppercase">
+      </div>
+    </div>
+
+    <!-- OBSERVAÇÕES -->
+    <div class="form-section-title">Observações</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label for="observacoes">Anotações / Detalhes</label>
+        <textarea id="observacoes" name="observacoes" placeholder="Anestesia usada, intercorrências, cuidados pós-operatórios..."></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-danger btn-sm" id="btn-excluir" style="display:none;margin-right:auto">Excluir</button>
+      <a href="historico.html" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary" id="btn-salvar">Salvar Cirurgia</button>
+    </div>
+  </form>
+</main>
+
+<div id="toast"></div>
+
+<!-- Modal exclusão -->
+<div class="modal-overlay" id="modal-excluir">
+  <div class="modal">
+    <h3>Excluir cirurgia</h3>
+    <p>Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="modal-cancelar">Cancelar</button>
+      <button class="btn btn-danger" id="modal-confirmar">Sim, excluir</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const editId = params.get('id');
+let registroAtual = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!initSupabase()) return;
+
+  // Pré-preenche data/hora atual para nova cirurgia
+  if (!editId) {
+    const agora = new Date();
+    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+    document.getElementById('data_cirurgia').value = agora.toISOString().slice(0, 16);
+  }
+
+  // Máscaras
+  document.getElementById('cpf').addEventListener('input', e => {
+    e.target.value = mascaraCPF(e.target.value);
+  });
+  document.getElementById('contato').addEventListener('input', e => {
+    e.target.value = mascaraTelefone(e.target.value);
+  });
+  document.getElementById('cep').addEventListener('input', e => {
+    e.target.value = mascaraCEP(e.target.value);
+  });
+  document.getElementById('estado').addEventListener('input', e => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  // Busca CEP ao sair do campo
+  document.getElementById('cep').addEventListener('blur', async e => {
+    const cep = e.target.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+      await buscarCEP(cep, (data) => {
+        document.getElementById('logradouro').value = data.logradouro || '';
+        document.getElementById('bairro').value = data.bairro || '';
+        document.getElementById('cidade').value = data.localidade || '';
+        document.getElementById('estado').value = data.uf || '';
+        document.getElementById('numero').focus();
+      });
+    }
+  });
+
+  // Carrega dados se edição
+  if (editId) {
+    document.getElementById('page-title').textContent = 'Editar Cirurgia';
+    document.getElementById('page-sub').textContent = 'Atualize os dados da cirurgia.';
+    document.getElementById('btn-excluir').style.display = 'inline-flex';
+    document.getElementById('btn-salvar').textContent = 'Salvar Alterações';
+    await carregarRegistro(editId);
+  }
+
+  // Submit
+  document.getElementById('form-cirurgia').addEventListener('submit', salvar);
+
+  // Excluir
+  document.getElementById('btn-excluir').addEventListener('click', () => {
+    document.getElementById('modal-excluir').classList.add('open');
+  });
+  document.getElementById('modal-cancelar').addEventListener('click', () => {
+    document.getElementById('modal-excluir').classList.remove('open');
+  });
+  document.getElementById('modal-confirmar').addEventListener('click', excluir);
+});
+
+async function carregarRegistro(id) {
+  const { data, error } = await supabase.from('cirurgias').select('*').eq('id', id).single();
+  if (error || !data) { toast('Registro não encontrado.', 'error'); return; }
+  registroAtual = data;
+
+  const campos = ['nome_pet', 'especie', 'raca', 'tipo_cirurgia', 'status',
+    'valor', 'forma_pagamento', 'nome_proprietario', 'cpf', 'contato',
+    'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'observacoes'];
+
+  campos.forEach(c => {
+    const el = document.getElementById(c);
+    if (!el) return;
+    if (c === 'data_cirurgia') return;
+    el.value = data[c] != null ? data[c] : '';
+  });
+
+  // Data/hora
+  if (data.data_cirurgia) {
+    const d = new Date(data.data_cirurgia);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    document.getElementById('data_cirurgia').value = d.toISOString().slice(0, 16);
+  }
+}
+
+async function salvar(e) {
+  e.preventDefault();
+  if (!validarForm()) return;
+
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  const cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+  if (cpf && !validarCPF(cpf)) {
+    document.getElementById('err-cpf').classList.add('show');
+    btn.disabled = false;
+    btn.textContent = editId ? 'Salvar Alterações' : 'Salvar Cirurgia';
+    return;
+  }
+
+  const payload = {
+    nome_pet: v('nome_pet'),
+    especie: v('especie'),
+    raca: v('raca'),
+    tipo_cirurgia: v('tipo_cirurgia'),
+    data_cirurgia: document.getElementById('data_cirurgia').value || null,
+    status: v('status'),
+    valor: v('valor') ? Number(v('valor')) : null,
+    forma_pagamento: v('forma_pagamento'),
+    nome_proprietario: v('nome_proprietario'),
+    cpf: cpf || null,
+    contato: document.getElementById('contato').value.replace(/\D/g, '') || null,
+    cep: document.getElementById('cep').value.replace(/\D/g, '') || null,
+    logradouro: v('logradouro'),
+    numero: v('numero'),
+    complemento: v('complemento'),
+    bairro: v('bairro'),
+    cidade: v('cidade'),
+    estado: v('estado'),
+    observacoes: v('observacoes'),
+  };
+
+  let error;
+  if (editId) {
+    ({ error } = await supabase.from('cirurgias').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId));
+  } else {
+    ({ error } = await supabase.from('cirurgias').insert(payload));
+  }
+
+  if (error) {
+    toast('Erro ao salvar: ' + error.message, 'error');
+    btn.disabled = false;
+    btn.textContent = editId ? 'Salvar Alterações' : 'Salvar Cirurgia';
+    return;
+  }
+
+  toast(editId ? 'Cirurgia atualizada!' : 'Cirurgia registrada!');
+  setTimeout(() => location.href = 'historico.html', 1200);
+}
+
+async function excluir() {
+  document.getElementById('modal-excluir').classList.remove('open');
+  const { error } = await supabase.from('cirurgias').delete().eq('id', editId);
+  if (error) { toast('Erro ao excluir.', 'error'); return; }
+  toast('Registro excluído.');
+  setTimeout(() => location.href = 'historico.html', 1200);
+}
+
+function v(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() || null : null;
+}
+
+function validarForm() {
+  let ok = true;
+  ['nome_pet', 'data_cirurgia', 'nome_proprietario'].forEach(id => {
+    const el = document.getElementById(id);
+    const err = document.getElementById('err-' + id);
+    if (!el.value.trim()) {
+      err && err.classList.add('show');
+      ok = false;
+    } else {
+      err && err.classList.remove('show');
+    }
+  });
+  document.getElementById('err-cpf').classList.remove('show');
+  return ok;
+}
+</script>
+</body>
+</html>
