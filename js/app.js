@@ -189,4 +189,18 @@ function badgeStatus(s) {
   return `<span class="badge ${map[s]||'badge-agendada'}">${s}</span>`;
 }
 
-document.addEventListener('DOMContentLoaded', setNavAtivo);
+document.addEventListener('DOMContentLoaded', () => {
+  setNavAtivo();
+  const toggle = document.getElementById('nav-toggle');
+  const links = document.getElementById('nav-links');
+  if (toggle && links) {
+    toggle.addEventListener('click', () => {
+      links.classList.toggle('open');
+      toggle.textContent = links.classList.contains('open') ? '✕' : '☰';
+    });
+    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      links.classList.remove('open');
+      toggle.textContent = '☰';
+    }));
+  }
+});

@@ -271,10 +271,38 @@ textarea { resize: vertical; min-height: 80px; }
 .modal p { font-size: .875rem; color: var(--gray-600); margin-bottom: 1.5rem; }
 .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; }
 
+/* HAMBURGER */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: .2rem .4rem;
+  line-height: 1;
+  margin-left: auto;
+}
+
 /* RESPONSIVE */
-@media (max-width: 640px) {
+@media (max-width: 700px) {
+  nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: .75rem 1rem;
+    gap: 0;
+  }
+  .nav-toggle { display: block; }
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: .15rem;
+    padding: .5rem 0 .25rem;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: .65rem .75rem; font-size: .9rem; }
   .form-grid.cols-3 { grid-template-columns: 1fr; }
-  .nav-links a span { display: none; }
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   main { padding: 1.25rem 1rem; }
 }
